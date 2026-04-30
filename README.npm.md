@@ -13,13 +13,17 @@ npm install @involvex/yt-dlp
 ### CLI Usage
 
 \`\`\`bash
+
 # Download a video
+
 yt-dlp https://www.youtube.com/watch?v=VIDEO_ID
 
 # Download with options
+
 yt-dlp -f "best" -o "%(title)s.%(ext)s" https://www.youtube.com/watch?v=VIDEO_ID
 
 # Get video info
+
 yt-dlp --dump-json https://www.youtube.com/watch?v=VIDEO_ID
 \`\`\`
 
@@ -29,23 +33,23 @@ yt-dlp --dump-json https://www.youtube.com/watch?v=VIDEO_ID
 import { createYtDlp } from "@involvex/yt-dlp";
 
 async function main() {
-  const ytdlp = await createYtDlp();
-  
-  // Download a video
-  const result = await ytdlp.download("https://www.youtube.com/watch?v=VIDEO_ID", {
-    format: "best",
-    output: "%(title)s.%(ext)s",
-  });
-  
-  console.log("Download result:", result);
-  
-  // Get video info
-  const info = await ytdlp.getInfo("https://www.youtube.com/watch?v=VIDEO_ID");
-  console.log("Video info:", info);
-  
-  // List available formats
-  const formats = await ytdlp.listFormats("https://www.youtube.com/watch?v=VIDEO_ID");
-  console.log("Available formats:", formats);
+const ytdlp = await createYtDlp();
+
+// Download a video
+const result = await ytdlp.download("https://www.youtube.com/watch?v=VIDEO_ID", {
+format: "best",
+output: "%(title)s.%(ext)s",
+});
+
+console.log("Download result:", result);
+
+// Get video info
+const info = await ytdlp.getInfo("https://www.youtube.com/watch?v=VIDEO_ID");
+console.log("Video info:", info);
+
+// List available formats
+const formats = await ytdlp.listFormats("https://www.youtube.com/watch?v=VIDEO_ID");
+console.log("Available formats:", formats);
 }
 
 main();
@@ -56,10 +60,13 @@ main();
 The package includes PowerShell completion support. After installation, you can enable it by:
 
 \`\`\`powershell
+
 # For current user
+
 Copy-Item -Path node_modules/@involvex/yt-dlp/completions/yt-dlp.ps1 -Destination $PROFILE
 
 # For all users (requires admin)
+
 Copy-Item -Path node_modules/@involvex/yt-dlp/completions/yt-dlp.ps1 -Destination "$env:ALLUSERSPROFILE\\Documents\\WindowsPowerShell\\yt-dlp.ps1"
 \`\`\`
 
@@ -81,9 +88,9 @@ Downloads a video from the given URL.
 
 \`\`\`typescript
 const result = await ytdlp.download(url, {
-  format: "best",
-  output: "%(title)s.%(ext)s",
-  subtitles: true,
+format: "best",
+output: "%(title)s.%(ext)s",
+subtitles: true,
 });
 \`\`\`
 
@@ -103,7 +110,7 @@ Lists all available formats for a video.
 \`\`\`typescript
 const formats = await ytdlp.listFormats(url);
 formats.forEach(format => {
-  console.log(format.formatId, format.ext, format.resolution);
+console.log(format.formatId, format.ext, format.resolution);
 });
 \`\`\`
 
@@ -119,16 +126,21 @@ console.log(result.stdout);
 ## Development
 
 \`\`\`bash
+
 # Install dependencies
+
 bun install
 
 # Build the package
+
 bun run build
 
 # Generate completion scripts
+
 bun run generate-completion
 
 # Run in development mode
+
 bun run dev
 \`\`\`
 

@@ -17,6 +17,7 @@ The `@involvex/yt-dlp` npm package has been successfully created with all featur
 ## 🎯 Features Implemented
 
 ### 1. ✅ TypeScript API
+
 - **Main Class**: `YtDlp` with comprehensive methods
 - **Core Functions**:
   - `download(url, options)` - Download videos with full options support
@@ -27,6 +28,7 @@ The `@involvex/yt-dlp` npm package has been successfully created with all featur
 - **Error Handling**: Robust error handling and validation
 
 ### 2. ✅ CLI Wrapper
+
 - **Binary Detection**: Automatic platform and architecture detection
 - **Cross-Platform**: Full support for Windows, macOS, and Linux
 - **Streaming**: Proper stdout/stderr streaming
@@ -34,6 +36,7 @@ The `@involvex/yt-dlp` npm package has been successfully created with all featur
 - **Entry Point**: `bin/yt-dlp.js` for CLI usage
 
 ### 3. ✅ Binary Management
+
 - **Platform Detection**: Automatic detection of OS and architecture
 - **Path Resolution**: Smart binary path resolution with fallbacks
 - **Validation**: Binary validation and version checking
@@ -41,6 +44,7 @@ The `@involvex/yt-dlp` npm package has been successfully created with all featur
 - **Bundled Binaries**: All platform binaries included (~71MB total)
 
 ### 4. ✅ PowerShell Completion
+
 - **Dynamic Generation**: Automatic flag extraction from yt-dlp
 - **Comprehensive Coverage**: All 200+ yt-dlp flags included
 - **Smart Completion**:
@@ -52,6 +56,7 @@ The `@involvex/yt-dlp` npm package has been successfully created with all featur
 - **Installation**: Easy installation instructions
 
 ### 5. ✅ Build System
+
 - **TypeScript Compilation**: Full TypeScript to JavaScript compilation
 - **Type Definitions**: Automatic generation of .d.ts files
 - **Source Maps**: Source map generation for debugging
@@ -121,7 +126,7 @@ import { createYtDlp } from "@involvex/yt-dlp";
 
 async function main() {
   const ytdlp = await createYtDlp();
-  
+
   // Download a video
   const result = await ytdlp.download(
     "https://www.youtube.com/watch?v=VIDEO_ID",
@@ -129,19 +134,21 @@ async function main() {
       format: "best",
       output: "%(title)s.%(ext)s",
       subtitles: true,
-    }
+    },
   );
-  
+
   // Get video info
   const info = await ytdlp.getInfo("https://www.youtube.com/watch?v=VIDEO_ID");
   console.log(info.title, info.uploader, info.duration);
-  
+
   // List formats
-  const formats = await ytdlp.listFormats("https://www.youtube.com/watch?v=VIDEO_ID");
-  formats.forEach(format => {
+  const formats = await ytdlp.listFormats(
+    "https://www.youtube.com/watch?v=VIDEO_ID",
+  );
+  formats.forEach((format) => {
     console.log(format.formatId, format.ext, format.resolution);
   });
-  
+
   // Execute custom command
   const result = await ytdlp.exec(["--list-extractors"]);
   console.log(result.stdout);
@@ -193,8 +200,9 @@ bun run lint
 ## 📊 Package Statistics
 
 ### Binary Sizes
+
 - **Windows x64**: 18.4 MB
-- **Windows x86**: 18.4 MB  
+- **Windows x86**: 18.4 MB
 - **Windows ARM64**: 18.4 MB
 - **Linux x64**: 3.2 MB
 - **Linux ARM64**: 3.2 MB
@@ -205,6 +213,7 @@ bun run lint
 **Total Package Size**: ~71 MB (binaries) + ~500 KB (code) = ~71.5 MB
 
 ### Code Statistics
+
 - **TypeScript Files**: 6
 - **JavaScript Files**: 8 (compiled)
 - **Total Lines of Code**: ~1,500
@@ -229,24 +238,28 @@ All functionality has been tested and verified:
 ## 🎯 Key Features
 
 ### 1. Cross-Platform Support
+
 - Automatic platform detection
 - Platform-specific binary selection
 - Fallback to system binaries
 - Windows, macOS, Linux support
 
 ### 2. Type Safety
+
 - Complete TypeScript definitions
 - Type-safe API
 - IntelliSense support
 - Compile-time error checking
 
 ### 3. Developer Experience
+
 - Simple API surface
 - Comprehensive documentation
 - Easy installation
 - Clear error messages
 
 ### 4. Production Ready
+
 - Robust error handling
 - Binary validation
 - Proper exit codes
@@ -255,6 +268,7 @@ All functionality has been tested and verified:
 ## 📝 API Reference
 
 ### `createYtDlp()`
+
 Creates a new YtDlp instance and initializes it.
 
 ```typescript
@@ -262,6 +276,7 @@ const ytdlp = await createYtDlp();
 ```
 
 ### `YtDlp.download(url, options)`
+
 Downloads a video from the given URL.
 
 ```typescript
@@ -273,6 +288,7 @@ const result = await ytdlp.download(url, {
 ```
 
 ### `YtDlp.getInfo(url, options)`
+
 Gets information about a video without downloading it.
 
 ```typescript
@@ -281,16 +297,18 @@ console.log(info.title, info.uploader, info.duration);
 ```
 
 ### `YtDlp.listFormats(url, options)`
+
 Lists all available formats for a video.
 
 ```typescript
 const formats = await ytdlp.listFormats(url);
-formats.forEach(format => {
+formats.forEach((format) => {
   console.log(format.formatId, format.ext, format.resolution);
 });
 ```
 
 ### `YtDlp.exec(args)`
+
 Executes arbitrary yt-dlp command with custom arguments.
 
 ```typescript
@@ -299,6 +317,7 @@ console.log(result.stdout);
 ```
 
 ### `getBinaryInfo()`
+
 Gets information about the current binary.
 
 ```typescript
@@ -307,6 +326,7 @@ console.log(info.path, info.version, info.platform, info.arch);
 ```
 
 ### `validateBinary()`
+
 Validates that the binary is working correctly.
 
 ```typescript
@@ -360,6 +380,7 @@ The `@involvex/yt-dlp` package is **production-ready** with:
 ✅ **Developer-friendly** API and CLI
 
 The package is ready for:
+
 - Development and testing
 - Publishing to npm
 - Production use
@@ -379,6 +400,7 @@ The package is ready for:
 ## 📞 Support
 
 For issues and support:
+
 - GitHub Issues: https://github.com/involvex/yt-dlp/issues
 - Documentation: See README.npm.md
 - Examples: See usage examples above

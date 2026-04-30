@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from devscripts.utils import get_filename_args, write_file
 from yt_dlp.extractor import list_extractor_classes
 
-TEMPLATE = '''\
+TEMPLATE = """\
 # Supported sites
 
 Below is a list of all extractors that are currently included with yt-dlp.
@@ -19,13 +19,15 @@ Not all sites listed here are guaranteed to work; websites are constantly changi
 The only reliable way to check if a site is supported is to try it.
 
 {ie_list}
-'''
+"""
 
 
 def main():
-    out = '\n'.join(ie.description() for ie in list_extractor_classes() if ie.IE_DESC is not False)
+    out = "\n".join(
+        ie.description() for ie in list_extractor_classes() if ie.IE_DESC is not False
+    )
     write_file(get_filename_args(), TEMPLATE.format(ie_list=out))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

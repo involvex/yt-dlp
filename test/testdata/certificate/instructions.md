@@ -1,12 +1,14 @@
 # Generate certificates for client cert tests
 
 ## CA
+
 ```sh
 openssl ecparam -name prime256v1 -genkey -noout -out ca.key
 openssl req -new -x509 -sha256 -days 6027 -key ca.key -out ca.crt -subj "/CN=ytdlptest"
 ```
 
 ## Client
+
 ```sh
 openssl ecparam -name prime256v1 -genkey -noout -out client.key
 openssl ec -in client.key -out clientencrypted.key -passout pass:foobar -aes256

@@ -1,7 +1,13 @@
 import { spawnYtDlp, getBinaryInfo, validateBinary } from "./binary.js";
 import { promisify } from "util";
 import { exec } from "child_process";
-import { YtDlpOptions, DownloadResult, VideoInfo, Format, ExecResult } from "./types.js";
+import {
+  YtDlpOptions,
+  DownloadResult,
+  VideoInfo,
+  Format,
+  ExecResult,
+} from "./types.js";
 
 const execAsync = promisify(exec);
 
@@ -17,12 +23,17 @@ export class YtDlp {
     this.binaryPath = info.path;
   }
 
-  async download(url: string, options: YtDlpOptions = {}): Promise<DownloadResult> {
+  async download(
+    url: string,
+    options: YtDlpOptions = {},
+  ): Promise<DownloadResult> {
     const args = this.buildArgs(url, options);
-    
+
     try {
-      const { stdout, stderr } = await execAsync(`"${this.binaryPath}" ${args.join(" ")}`);
-      
+      const { stdout, stderr } = await execAsync(
+        `"${this.binaryPath}" ${args.join(" ")}`,
+      );
+
       return {
         success: true,
         data: stdout,
@@ -38,24 +49,31 @@ export class YtDlp {
 
   async getInfo(url: string, options: YtDlpOptions = {}): Promise<VideoInfo> {
     const args = ["--dump-json", url, ...this.buildOptions(options)];
-    
+
     try {
-      const { stdout } = await execAsync(`"${this.binaryPath}" ${args.join(" ")}`);
+      const { stdout } = await execAsync(
+        `"${this.binaryPath}" ${args.join(" ")}`,
+      );
       return JSON.parse(stdout);
     } catch (error: any) {
       throw new Error(`Failed to get info: ${error.message}`);
     }
   }
 
-  async listFormats(url: string, options: YtDlpOptions = {}): Promise<Format[]> {
+  async listFormats(
+    url: string,
+    options: YtDlpOptions = {},
+  ): Promise<Format[]> {
     const info = await this.getInfo(url, options);
     return info.formats || [];
   }
 
   async exec(args: string[]): Promise<ExecResult> {
     try {
-      const { stdout, stderr } = await execAsync(`"${this.binaryPath}" ${args.join(" ")}`);
-      
+      const { stdout, stderr } = await execAsync(
+        `"${this.binaryPath}" ${args.join(" ")}`,
+      );
+
       return {
         stdout,
         stderr,
@@ -77,19 +95,19 @@ export class YtDlp {
 
   private buildOptions(options: YtDlpOptions): string[] {
     const args: string[] = [];
-    
+
     for (const [key, value] of Object.entries(options)) {
       if (value === undefined || value === null) continue;
-      
+
       const flag = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
-      
+
       if (typeof value === "boolean") {
         if (value) args.push(flag);
       } else {
         args.push(flag, String(value));
       }
     }
-    
+
     return args;
   }
 }

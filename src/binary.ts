@@ -27,25 +27,25 @@ export function getArch(): string {
 export function getBinaryPath(): string {
   const platform = getPlatform();
   const arch = getArch();
-  
+
   const binaryDir = join(__dirname, "..", "binaries", `${platform}-${arch}`);
   const binaryName = platform === "windows" ? "yt-dlp.exe" : "yt-dlp";
   const binaryPath = join(binaryDir, binaryName);
-  
+
   if (existsSync(binaryPath)) {
     return binaryPath;
   }
-  
+
   return binaryName;
 }
 
 export async function getBinaryInfo(): Promise<BinaryInfo> {
   const binaryPath = getBinaryPath();
-  
+
   try {
     const { stdout } = await execAsync(`"${binaryPath}" --version`);
     const version = stdout.trim();
-    
+
     return {
       path: binaryPath,
       version,

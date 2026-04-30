@@ -19,25 +19,25 @@ class MockLogger(IEContentProviderLogger):
         self.messages = collections.defaultdict(list)
 
     def trace(self, message: str):
-        self.messages['trace'].append(message)
+        self.messages["trace"].append(message)
 
     def debug(self, message: str):
-        self.messages['debug'].append(message)
+        self.messages["debug"].append(message)
 
     def info(self, message: str):
-        self.messages['info'].append(message)
+        self.messages["info"].append(message)
 
     def warning(self, message: str, *, once=False):
-        self.messages['warning'].append(message)
+        self.messages["warning"].append(message)
 
     def error(self, message: str):
-        self.messages['error'].append(message)
+        self.messages["error"].append(message)
 
 
 @pytest.fixture
 def ie() -> InfoExtractor:
     ydl = YoutubeDL()
-    return ydl.get_info_extractor('Youtube')
+    return ydl.get_info_extractor("Youtube")
 
 
 @pytest.fixture
@@ -49,23 +49,20 @@ def logger() -> MockLogger:
 def pot_request() -> PoTokenRequest:
     return PoTokenRequest(
         context=PoTokenContext.GVS,
-        innertube_context={'client': {'clientName': 'WEB'}},
-        innertube_host='youtube.com',
+        innertube_context={"client": {"clientName": "WEB"}},
+        innertube_host="youtube.com",
         session_index=None,
         player_url=None,
         is_authenticated=False,
         video_webpage=None,
-
-        visitor_data='example-visitor-data',
-        data_sync_id='example-data-sync-id',
-        video_id='example-video-id',
-
+        visitor_data="example-visitor-data",
+        data_sync_id="example-data-sync-id",
+        video_id="example-video-id",
         request_cookiejar=YoutubeDLCookieJar(),
         request_proxy=None,
         request_headers=HTTPHeaderDict(),
         request_timeout=None,
         request_source_address=None,
         request_verify_tls=True,
-
         bypass_cache=False,
     )

@@ -5,7 +5,6 @@ As part of the YouTube extractor, we have a framework for solving n/sig JS Chall
 > [!TIP]
 > If publishing a JS Challenge Provider plugin to GitHub, add the [yt-dlp-jsc-provider](https://github.com/topics/yt-dlp-jsc-provider) topic to your repository to help users find it.
 
-
 ## Public APIs
 
 - `yt_dlp.extractor.youtube.jsc.provider`
@@ -30,7 +29,7 @@ from yt_dlp.extractor.youtube.jsc.provider import (
     JsChallengeResponse,
     JsChallengeProviderError,
     JsChallengeProviderRejectedRequest,
-    JsChallengeType, 
+    JsChallengeType,
     JsChallengeProviderResponse,
     NChallengeOutput,
 )
@@ -45,7 +44,7 @@ class MyJsChallengeProviderJCP(JsChallengeProvider):  # Provider class name must
     # Define a unique display name for the provider
     PROVIDER_NAME = 'my-provider'
     BUG_REPORT_LOCATION = 'https://issues.example.com/report'
-    
+
     # Set supported challenge types.
     # If None, the provider will handle all types.
     _SUPPORTED_TYPES = [JsChallengeType.N]
@@ -70,17 +69,17 @@ class MyJsChallengeProviderJCP(JsChallengeProvider):  # Provider class name must
         # Raise yt_dlp.extractor.youtube.jsc.provider.JsChallengeProviderRejectedRequest if the request is not supported.
         if len("something") > 255:
             raise JsChallengeProviderRejectedRequest('Challenges longer than 255 are not supported', expected=True)
-            
+
 
         # ℹ️ Settings are pulled from extractor args passed to yt-dlp with the key `youtubejsc-<PROVIDER_KEY>`.
         # For this example, the extractor arg would be:
         # `--extractor-args "youtubejsc-myjschallengeprovider:bin_path=/path/to/bin"`
         bin_path = self._configuration_arg(
             'bin_path', default=['/path/to/bin'])[0]
-        
+
         # See below for logging guidelines
         self.logger.trace(f'Using bin path: {bin_path}')
-        
+
         for request in requests:
             # You can use the _get_player method to get the player JS code if needed.
             # This shares the same caching as the YouTube extractor, so it will not make unnecessary requests.
@@ -91,25 +90,25 @@ class MyJsChallengeProviderJCP(JsChallengeProvider):  # Provider class name must
             if ret != 0:
                 # ℹ️ If there is an error, raise JsChallengeProviderError.
                 # The request will be sent to the next provider if there is one.
-                # You can specify whether it is expected or not. If it is unexpected, 
+                # You can specify whether it is expected or not. If it is unexpected,
                 #  the log will include a link to the bug report location (BUG_REPORT_LOCATION).
-                
+
                 # raise JsChallengeProviderError(f'Command returned error code {ret}', expected=False)
-                
+
                 # You can also only fail this specific request by returning a JsChallengeProviderResponse with the error.
                 # This will allow other requests to be processed by this provider.
                 yield JsChallengeProviderResponse(
-                    request=request, 
+                    request=request,
                     error=JsChallengeProviderError(f'Command returned error code {ret}', expected=False)
                 )
-                
+
             yield JsChallengeProviderResponse(
-                request=request, 
+                request=request,
                 response=JsChallengeResponse(
                     type=JsChallengeType.N,
                     output=NChallengeOutput(results=traverse_obj(json.loads(stdout))),
             ))
-        
+
 
 # If there are multiple JS Challenge Providers that can handle the same JsChallengeRequest(s),
 # you can define a preference function to increase/decrease the priority of providers.

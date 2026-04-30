@@ -17,55 +17,61 @@ from yt_dlp.utils import ExtractorError
 class TestYoutubeLists(unittest.TestCase):
     def assertIsPlaylist(self, info):
         """Make sure the info has '_type' set to 'playlist'"""
-        self.assertEqual(info['_type'], 'playlist')
+        self.assertEqual(info["_type"], "playlist")
 
     def test_youtube_playlist_noplaylist(self):
         dl = FakeYDL()
-        dl.params['noplaylist'] = True
+        dl.params["noplaylist"] = True
         ie = YoutubeTabIE(dl)
-        result = ie.extract('https://www.youtube.com/watch?v=OmJ-4B-mS-Y&list=PLydZ2Hrp_gPRJViZjLFKaBMgCQOYEEkyp&index=2')
-        self.assertEqual(result['_type'], 'url')
-        self.assertEqual(result['ie_key'], YoutubeIE.ie_key())
-        self.assertEqual(YoutubeIE.extract_id(result['url']), 'OmJ-4B-mS-Y')
+        result = ie.extract(
+            "https://www.youtube.com/watch?v=OmJ-4B-mS-Y&list=PLydZ2Hrp_gPRJViZjLFKaBMgCQOYEEkyp&index=2"
+        )
+        self.assertEqual(result["_type"], "url")
+        self.assertEqual(result["ie_key"], YoutubeIE.ie_key())
+        self.assertEqual(YoutubeIE.extract_id(result["url"]), "OmJ-4B-mS-Y")
 
     def test_youtube_mix(self):
         dl = FakeYDL()
         ie = YoutubeTabIE(dl)
-        result = ie.extract('https://www.youtube.com/watch?v=tyITL_exICo&list=RDCLAK5uy_kLWIr9gv1XLlPbaDS965-Db4TrBoUTxQ8')
-        entries = list(result['entries'])
+        result = ie.extract(
+            "https://www.youtube.com/watch?v=tyITL_exICo&list=RDCLAK5uy_kLWIr9gv1XLlPbaDS965-Db4TrBoUTxQ8"
+        )
+        entries = list(result["entries"])
         self.assertTrue(len(entries) >= 50)
         original_video = entries[0]
-        self.assertEqual(original_video['id'], 'tyITL_exICo')
+        self.assertEqual(original_video["id"], "tyITL_exICo")
 
     def test_youtube_flat_playlist_extraction(self):
         dl = FakeYDL()
-        dl.params['extract_flat'] = True
+        dl.params["extract_flat"] = True
         ie = YoutubeTabIE(dl)
-        result = ie.extract('https://www.youtube.com/playlist?list=PL4lCao7KL_QFVb7Iudeipvc2BCavECqzc')
+        result = ie.extract(
+            "https://www.youtube.com/playlist?list=PL4lCao7KL_QFVb7Iudeipvc2BCavECqzc"
+        )
         self.assertIsPlaylist(result)
-        entries = list(result['entries'])
+        entries = list(result["entries"])
         self.assertTrue(len(entries) == 1)
         video = entries[0]
-        self.assertEqual(video['_type'], 'url')
-        self.assertEqual(video['ie_key'], 'Youtube')
-        self.assertEqual(video['id'], 'BaW_jenozKc')
-        self.assertEqual(video['url'], 'https://www.youtube.com/watch?v=BaW_jenozKc')
-        self.assertEqual(video['title'], 'youtube-dl test video "\'/\\ä↭𝕐')
-        self.assertEqual(video['duration'], 10)
-        self.assertEqual(video['uploader'], 'Philipp Hagemeister')
+        self.assertEqual(video["_type"], "url")
+        self.assertEqual(video["ie_key"], "Youtube")
+        self.assertEqual(video["id"], "BaW_jenozKc")
+        self.assertEqual(video["url"], "https://www.youtube.com/watch?v=BaW_jenozKc")
+        self.assertEqual(video["title"], "youtube-dl test video \"'/\\ä↭𝕐")
+        self.assertEqual(video["duration"], 10)
+        self.assertEqual(video["uploader"], "Philipp Hagemeister")
 
     def test_youtube_channel_no_uploads(self):
         dl = FakeYDL()
-        dl.params['extract_flat'] = True
+        dl.params["extract_flat"] = True
         ie = YoutubeTabIE(dl)
         # no uploads
-        with self.assertRaisesRegex(ExtractorError, r'no uploads'):
-            ie.extract('https://www.youtube.com/channel/UC2yXPzFejc422buOIzn_0CA')
+        with self.assertRaisesRegex(ExtractorError, r"no uploads"):
+            ie.extract("https://www.youtube.com/channel/UC2yXPzFejc422buOIzn_0CA")
 
         # no uploads and no UCID given
-        with self.assertRaisesRegex(ExtractorError, r'no uploads'):
-            ie.extract('https://www.youtube.com/news')
+        with self.assertRaisesRegex(ExtractorError, r"no uploads"):
+            ie.extract("https://www.youtube.com/news")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

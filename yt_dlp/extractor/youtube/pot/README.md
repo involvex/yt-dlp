@@ -7,7 +7,6 @@ Refer to the [PO Token Guide](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Gui
 > [!TIP]
 > If publishing a PO Token Provider plugin to GitHub, add the [yt-dlp-pot-provider](https://github.com/topics/yt-dlp-pot-provider) topic to your repository to help users find it.
 
-
 ## Public APIs
 
 - `yt_dlp.extractor.youtube.pot.cache`
@@ -55,9 +54,9 @@ class MyPoTokenProviderPTP(PoTokenProvider):  # Provider class name must end wit
 
     # Innertube Client Name.
     # For example, "WEB", "ANDROID", "TVHTML5".
-    # For a list of WebPO client names, 
+    # For a list of WebPO client names,
     #  see yt_dlp.extractor.youtube.pot.utils.WEBPO_CLIENTS.
-    # Also see yt_dlp.extractor.youtube._base.INNERTUBE_CLIENTS 
+    # Also see yt_dlp.extractor.youtube._base.INNERTUBE_CLIENTS
     #  for a list of client names currently supported by the YouTube extractor.
     _SUPPORTED_CLIENTS = ('WEB', 'TVHTML5')
 
@@ -65,13 +64,13 @@ class MyPoTokenProviderPTP(PoTokenProvider):  # Provider class name must end wit
         PoTokenContext.GVS,
     )
 
-    # If your provider makes external requests to websites (i.e. to youtube.com) 
+    # If your provider makes external requests to websites (i.e. to youtube.com)
     #  using another library or service (i.e., not _request_webpage),
     # set the request features that are supported here.
     # If only using _request_webpage to make external requests, set this to None.
     _SUPPORTED_EXTERNAL_REQUEST_FEATURES = (
-        ExternalRequestFeature.PROXY_SCHEME_HTTP, 
-        ExternalRequestFeature.SOURCE_ADDRESS, 
+        ExternalRequestFeature.PROXY_SCHEME_HTTP,
+        ExternalRequestFeature.SOURCE_ADDRESS,
         ExternalRequestFeature.DISABLE_TLS_VERIFICATION
     )
 
@@ -103,10 +102,10 @@ class MyPoTokenProviderPTP(PoTokenProvider):  # Provider class name must end wit
         # `--extractor-args "youtubepot-mypotokenprovider:url=https://custom.example.com/get_pot"`
         external_provider_url = self._configuration_arg(
             'url', default=['https://provider.example.com/get_pot'])[0]
-        
+
         # See below for logging guidelines
         self.logger.trace(f'Using external provider URL: {external_provider_url}')
-        
+
         # You should use the internal HTTP client to make requests where possible,
         # as it will handle cookies and other networking settings passed to yt-dlp.
         try:
@@ -121,8 +120,8 @@ class MyPoTokenProviderPTP(PoTokenProvider):  # Provider class name must end wit
                     # Important: If your provider has its own caching, please respect `bypass_cache`.
                     # This may be used in the future to request a fresh PO Token if required.
                     'do_not_cache': request.bypass_cache,
-                }).encode(), proxies={'all': None}), 
-                pot_request=request, 
+                }).encode(), proxies={'all': None}),
+                pot_request=request,
                 note=(
                   f'Requesting {request.context.value} PO Token '
                   f'for {request.internal_client_name} client from external provider'),
@@ -130,7 +129,7 @@ class MyPoTokenProviderPTP(PoTokenProvider):  # Provider class name must end wit
 
         except RequestError as e:
             # ℹ️ If there is an error, raise PoTokenProviderError.
-            # You can specify whether it is expected or not. If it is unexpected, 
+            # You can specify whether it is expected or not. If it is unexpected,
             #  the log will include a link to the bug report location (BUG_REPORT_LOCATION).
             raise PoTokenProviderError(
                 'Networking error while fetching to get PO Token from external provider',
@@ -172,7 +171,7 @@ def my_provider_preference(provider: PoTokenProvider, request: PoTokenRequest) -
 - Use `self.logger.debug` to log a message to the verbose output (`--verbose`).
   - For debugging information visible to users posting verbose logs.
   - Try to not log too much, prefer using trace logging for detailed debug messages.
-- Use `self.logger.trace` to log a message to the PO Token debug output (`--extractor-args "youtube:pot_trace=true"`). 
+- Use `self.logger.trace` to log a message to the PO Token debug output (`--extractor-args "youtube:pot_trace=true"`).
   - Log as much as you like here as needed for debugging your provider.
 - Avoid logging PO Tokens or any sensitive information to debug or info output.
 
@@ -186,7 +185,7 @@ def my_provider_preference(provider: PoTokenProvider, request: PoTokenRequest) -
 > The following describes more advance features that most users/developers will not need to use.
 
 > [!IMPORTANT]
-> yt-dlp currently has a built-in LRU Memory Cache Provider and a cache spec provider for WebPO Tokens. 
+> yt-dlp currently has a built-in LRU Memory Cache Provider and a cache spec provider for WebPO Tokens.
 > You should only need to implement cache providers if you want an external cache, or a cache spec if you are handling non-WebPO Tokens.
 
 ### Cache Providers
@@ -222,13 +221,13 @@ class MyCacheProviderPCP(PoTokenCacheProvider):  # Provider class name must end 
         return True
 
     def get(self, key: str):
-        # ℹ️ Similar to PO Token Providers, Cache Providers and Cache Spec Providers 
+        # ℹ️ Similar to PO Token Providers, Cache Providers and Cache Spec Providers
         # are passed down extractor args matching key youtubepot-<PROVIDER_KEY>.
         some_setting = self._configuration_arg('some_setting', default=['default_value'])[0]
         return self.my_cache.get(key)
 
     def store(self, key: str, value: str, expires_at: int):
-        # ⚠ expires_at MUST be respected. 
+        # ⚠ expires_at MUST be respected.
         # Cache entries should not be returned if they have expired.
         self.my_cache.store(key, value, expires_at)
 
@@ -239,13 +238,13 @@ class MyCacheProviderPCP(PoTokenCacheProvider):  # Provider class name must end 
         # Optional close hook, called when the YoutubeDL instance is closed.
         pass
 
-# If there are multiple PO Token Cache Providers available, you can 
-# define a preference function to increase/decrease the priority of providers. 
+# If there are multiple PO Token Cache Providers available, you can
+# define a preference function to increase/decrease the priority of providers.
 
-# IMPORTANT: Providers should be in preference of cache lookup time. 
-# For example, a memory cache should have a higher preference than a disk cache. 
+# IMPORTANT: Providers should be in preference of cache lookup time.
+# For example, a memory cache should have a higher preference than a disk cache.
 
-# VERY IMPORTANT: yt-dlp has a built-in memory cache with a priority of 10000. 
+# VERY IMPORTANT: yt-dlp has a built-in memory cache with a priority of 10000.
 # Your cache provider should be lower than this.
 
 
@@ -258,7 +257,7 @@ def my_cache_preference(provider: PoTokenCacheProvider, request: PoTokenRequest)
 
 `yt_dlp.extractor.youtube.pot.cache`
 
-These are used to provide information on how to cache a particular PO Token Request. 
+These are used to provide information on how to cache a particular PO Token Request.
 You might have a different cache spec for different kinds of PO Tokens.
 
 ```python
@@ -300,9 +299,9 @@ class MyCacheSpecProviderPCSP(PoTokenCacheSpecProvider):  # Provider class name 
             default_ttl=21600,
 
             # Optional: Specify a write policy.
-            # WRITE_FIRST will write to the highest priority provider only, 
+            # WRITE_FIRST will write to the highest priority provider only,
             #  whereas WRITE_ALL will write to all providers.
-            # WRITE_FIRST may be useful if the PO Token is short-lived 
+            # WRITE_FIRST may be useful if the PO Token is short-lived
             #  and there is no use writing to all providers.
             write_policy=CacheProviderWritePolicy.WRITE_ALL,
         )

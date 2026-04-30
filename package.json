@@ -1,1 +1,77 @@
-{"author":"Involvex","bin":{"yt-dlp":"./bin/yt-dlp.js"},"bugs":{"url":"https://github.com/involvex/yt-dlp/issues"},"cpu":["x64","arm64","ia32"],"dependencies":{},"description":"A feature-rich command-line audio/video downloader - Node.js wrapper with TypeScript API","devDependencies":{"@types/node":"^20.0.0","typescript":"^5.0.0"},"engines":{"node":">=18.0.0"},"exports":{".":{"import":"./dist/index.js","types":"./dist/index.d.ts"},"./cli":{"import":"./dist/cli.js","types":"./dist/cli.d.ts"}},"files":["dist","bin","binaries","completions","scripts/postinstall.js"],"homepage":"https://github.com/involvex/yt-dlp#readme","keywords":["yt-dlp","youtube-dl","video-downloader","audio-downloader","youtube","cli","typescript","powershell"],"license":"Unlicense","main":"./dist/index.js","name":"@involvex/yt-dlp","os":["win32","darwin","linux"],"repository":{"type":"git","url":"https://github.com/involvex/yt-dlp"},"scripts":{"build":"bun run build:ts && bun run build:bin","build:bin":"bun run scripts/build-binaries.ts","build:ts":"tsc","dev":"bun --watch src/index.ts","generate-completion":"bun run scripts/generate-completion.ts","lint":"eslint src --ext .ts","postinstall":"node scripts/postinstall.js","prepublishOnly":"bun run build","test":"bun test"},"type":"module","types":"./dist/index.d.ts","version":"2026.03.17"}
+{
+  "author": "Involvex",
+  "bin": {
+    "yt-dlp-cli": "./bin/yt-dlp.js"
+  },
+  "bugs": {
+    "url": "https://github.com/involvex/yt-dlp/issues"
+  },
+  "cpu": [
+    "x64",
+    "arm64",
+    "ia32"
+  ],
+  "dependencies": {},
+  "description": "A feature-rich command-line audio/video downloader - Node.js wrapper with TypeScript API",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./cli": {
+      "import": "./dist/cli.js",
+      "types": "./dist/cli.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "bin",
+    "binaries",
+    "completions",
+    "scripts/postinstall.js"
+  ],
+  "homepage": "https://github.com/involvex/yt-dlp#readme",
+  "keywords": [
+    "yt-dlp",
+    "youtube-dl",
+    "video-downloader",
+    "audio-downloader",
+    "youtube",
+    "cli",
+    "typescript",
+    "powershell"
+  ],
+  "license": "Unlicense",
+  "main": "./dist/index.js",
+  "name": "@involvex/yt-dlp",
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/involvex/yt-dlp"
+  },
+  "scripts": {
+    "build": "bun run build:ts && bun run build:bin",
+    "build:bin": "bun run scripts/build-binaries.ts",
+    "build:ts": "tsc",
+    "dev": "bun --watch src/index.ts",
+    "generate-completion": "bun run scripts/generate-completion.ts",
+    "lint": "eslint src --ext .ts",
+    "postinstall": "node scripts/postinstall.js",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "version": "2026.03.17"
+}

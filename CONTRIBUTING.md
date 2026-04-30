@@ -1,41 +1,40 @@
 # CONTRIBUTING TO YT-DLP
 
 - [OPENING AN ISSUE](#opening-an-issue)
-    - [Is the description of the issue itself sufficient?](#is-the-description-of-the-issue-itself-sufficient)
-    - [Are you using the latest version?](#are-you-using-the-latest-version)
-    - [Is the issue already documented?](#is-the-issue-already-documented)
-    - [Why are existing options not enough?](#why-are-existing-options-not-enough)
-    - [Have you read and understood the changes, between youtube-dl and yt-dlp](#have-you-read-and-understood-the-changes-between-youtube-dl-and-yt-dlp)
-    - [Is there enough context in your bug report?](#is-there-enough-context-in-your-bug-report)
-    - [Does the issue involve one problem, and one problem only?](#does-the-issue-involve-one-problem-and-one-problem-only)
-    - [Is anyone going to need the feature?](#is-anyone-going-to-need-the-feature)
-    - [Is your question about yt-dlp?](#is-your-question-about-yt-dlp)
-    - [Are you willing to share account details if needed?](#are-you-willing-to-share-account-details-if-needed)
-    - [Is the website primarily used for piracy](#is-the-website-primarily-used-for-piracy)
+  - [Is the description of the issue itself sufficient?](#is-the-description-of-the-issue-itself-sufficient)
+  - [Are you using the latest version?](#are-you-using-the-latest-version)
+  - [Is the issue already documented?](#is-the-issue-already-documented)
+  - [Why are existing options not enough?](#why-are-existing-options-not-enough)
+  - [Have you read and understood the changes, between youtube-dl and yt-dlp](#have-you-read-and-understood-the-changes-between-youtube-dl-and-yt-dlp)
+  - [Is there enough context in your bug report?](#is-there-enough-context-in-your-bug-report)
+  - [Does the issue involve one problem, and one problem only?](#does-the-issue-involve-one-problem-and-one-problem-only)
+  - [Is anyone going to need the feature?](#is-anyone-going-to-need-the-feature)
+  - [Is your question about yt-dlp?](#is-your-question-about-yt-dlp)
+  - [Are you willing to share account details if needed?](#are-you-willing-to-share-account-details-if-needed)
+  - [Is the website primarily used for piracy](#is-the-website-primarily-used-for-piracy)
 - [AUTOMATED CONTRIBUTIONS (AI / LLM) POLICY](#automated-contributions-ai--llm-policy)
 - [DEVELOPER INSTRUCTIONS](#developer-instructions)
-    - [Adding new feature or making overarching changes](#adding-new-feature-or-making-overarching-changes)
-    - [Adding support for a new site](#adding-support-for-a-new-site)
-    - [yt-dlp coding conventions](#yt-dlp-coding-conventions)
-        - [Mandatory and optional metafields](#mandatory-and-optional-metafields)
-        - [Provide fallbacks](#provide-fallbacks)
-        - [Regular expressions](#regular-expressions)
-        - [Long lines policy](#long-lines-policy)
-        - [Quotes](#quotes)
-        - [Inline values](#inline-values)
-        - [Collapse fallbacks](#collapse-fallbacks)
-        - [Trailing parentheses](#trailing-parentheses)
-        - [Use convenience conversion and parsing functions](#use-convenience-conversion-and-parsing-functions)
-    - [My pull request is labeled pending-fixes](#my-pull-request-is-labeled-pending-fixes)
+  - [Adding new feature or making overarching changes](#adding-new-feature-or-making-overarching-changes)
+  - [Adding support for a new site](#adding-support-for-a-new-site)
+  - [yt-dlp coding conventions](#yt-dlp-coding-conventions)
+    - [Mandatory and optional metafields](#mandatory-and-optional-metafields)
+    - [Provide fallbacks](#provide-fallbacks)
+    - [Regular expressions](#regular-expressions)
+    - [Long lines policy](#long-lines-policy)
+    - [Quotes](#quotes)
+    - [Inline values](#inline-values)
+    - [Collapse fallbacks](#collapse-fallbacks)
+    - [Trailing parentheses](#trailing-parentheses)
+    - [Use convenience conversion and parsing functions](#use-convenience-conversion-and-parsing-functions)
+  - [My pull request is labeled pending-fixes](#my-pull-request-is-labeled-pending-fixes)
 - [EMBEDDING YT-DLP](README.md#embedding-yt-dlp)
-
-
 
 # OPENING AN ISSUE
 
 Bugs and suggestions should be reported at: [yt-dlp/yt-dlp/issues](https://github.com/yt-dlp/yt-dlp/issues). Unless you were prompted to or there is another pertinent reason (e.g. GitHub fails to accept the bug report), please do not send bug reports via personal email. For discussions, join us in our [discord server](https://discord.gg/H5MNcFW63r).
 
 **Please include the full output of yt-dlp when run with `-vU`**, i.e. **add** `-vU` flag to **your command line**, copy the **whole** output and post it in the issue body wrapped in \`\`\` for better formatting. It should look similar to this:
+
 ```
 $ yt-dlp -vU <your command line>
 [debug] Command-line config: ['-vU', 'https://www.example.com/']
@@ -52,6 +51,7 @@ Latest version: nightly@... from yt-dlp/yt-dlp-nightly-builds
 yt-dlp is up to date (nightly@... from yt-dlp/yt-dlp-nightly-builds)
 ...
 ```
+
 **Do not post screenshots of verbose logs; only plain text is acceptable.**
 
 The output (including the first lines) contains important debugging information. Issues without the full output are often not reproducible and therefore will be closed as `incomplete`.
@@ -76,43 +76,43 @@ For bug reports, this means that your report should contain the **complete** out
 
 If the error is `ERROR: Unable to extract ...` and you cannot reproduce it from multiple countries, add `--write-pages` and upload the `.dump` files you get [somewhere](https://gist.github.com).
 
-**Site support requests must contain an example URL**. An example URL is a URL you might want to download, like `https://www.youtube.com/watch?v=BaW_jenozKc`. There should be an obvious video present. Except under very special circumstances, the main page of a video service (e.g. `https://www.youtube.com/`) is *not* an example URL.
+**Site support requests must contain an example URL**. An example URL is a URL you might want to download, like `https://www.youtube.com/watch?v=BaW_jenozKc`. There should be an obvious video present. Except under very special circumstances, the main page of a video service (e.g. `https://www.youtube.com/`) is _not_ an example URL.
 
-###  Are you using the latest version?
+### Are you using the latest version?
 
 Before reporting any issue, type `yt-dlp -U`. This should report that you're up-to-date. This goes for feature requests as well.
 
-###  Is the issue already documented?
+### Is the issue already documented?
 
 Make sure that someone has not already opened the issue you're trying to open. Search at the top of the window or browse the [GitHub Issues](https://github.com/yt-dlp/yt-dlp/search?type=Issues) of this repository. If there is an issue, subscribe to it to be notified when there is any progress. Unless you have something useful to add to the conversation, please refrain from commenting.
 
 Additionally, it is also helpful to see if the issue has already been documented in the [youtube-dl issue tracker](https://github.com/ytdl-org/youtube-dl/issues). If similar issues have already been reported in youtube-dl (but not in our issue tracker), links to them can be included in your issue report here.
 
-###  Why are existing options not enough?
+### Why are existing options not enough?
 
-Before requesting a new feature, please have a quick peek at [the list of supported options](README.md#usage-and-options). Many feature requests are for features that actually exist already! Please, absolutely do show off your work in the issue report and detail how the existing similar options do *not* solve your problem.
+Before requesting a new feature, please have a quick peek at [the list of supported options](README.md#usage-and-options). Many feature requests are for features that actually exist already! Please, absolutely do show off your work in the issue report and detail how the existing similar options do _not_ solve your problem.
 
-###  Have you read and understood the changes, between youtube-dl and yt-dlp
+### Have you read and understood the changes, between youtube-dl and yt-dlp
 
 There are many changes between youtube-dl and yt-dlp [(changes to default behavior)](README.md#differences-in-default-behavior), and some of the options available have a different behaviour in yt-dlp, or have been removed all together [(list of changes to options)](README.md#deprecated-options). Make sure you have read and understand the differences in the options and how this may impact your downloads before opening an issue.
 
-###  Is there enough context in your bug report?
+### Is there enough context in your bug report?
 
 People want to solve problems, and often think they do us a favor by breaking down their larger problems (e.g. wanting to skip already downloaded files) to a specific request (e.g. requesting us to look whether the file exists before downloading the info page). However, what often happens is that they break down the problem into two steps: One simple, and one impossible (or extremely complicated one).
 
 We are then presented with a very complicated request when the original problem could be solved far easier, e.g. by recording the downloaded video IDs in a separate file. To avoid this, you must include the greater context where it is non-obvious. In particular, every feature request that does not consist of adding support for a new site should contain a use case scenario that explains in what situation the missing feature would be useful.
 
-###  Does the issue involve one problem, and one problem only?
+### Does the issue involve one problem, and one problem only?
 
 Some of our users seem to think there is a limit of issues they can or should open. There is no limit of issues they can or should open. While it may seem appealing to be able to dump all your issues into one ticket, that means that someone who solves one of your issues cannot mark the issue as closed. Typically, reporting a bunch of issues leads to the ticket lingering since nobody wants to attack that behemoth, until someone mercifully splits the issue into multiple ones.
 
 In particular, every site support request issue should only pertain to services at one site (generally under a common domain, but always using the same backend technology). Do not request support for vimeo user videos, White house podcasts, and Google Plus pages in the same issue. Also, make sure that you don't post bug reports alongside feature requests. As a rule of thumb, a feature request does not include outputs of yt-dlp that are not immediately related to the feature at hand. Do not post reports of a network error alongside the request for a new video service.
 
-###  Is anyone going to need the feature?
+### Is anyone going to need the feature?
 
 Only post features that you (or an incapacitated friend you can personally talk to) require. Do not post features because they seem like a good idea. If they are really useful, they will be requested by someone who requires them.
 
-###  Is your question about yt-dlp?
+### Is your question about yt-dlp?
 
 Some bug reports are completely unrelated to yt-dlp and relate to a different, or even the reporter's own, application. Please make sure that you are actually using yt-dlp. If you are using a UI for yt-dlp, report the bug to the maintainer of the actual application providing the UI. In general, if you are unable to provide the verbose log, you should not be opening the issue here.
 
@@ -134,12 +134,11 @@ While these steps won't necessarily ensure that no misuse of the account takes p
 
 We follow [youtube-dl's policy](https://github.com/ytdl-org/youtube-dl#can-you-add-support-for-this-anime-video-site-or-site-which-shows-current-movies-for-free) to not support services that is primarily used for infringing copyright. Additionally, it has been decided to not to support porn sites that specialize in fakes. We also cannot support any service that serves only [DRM protected content](https://en.wikipedia.org/wiki/Digital_rights_management).
 
-
 # AUTOMATED CONTRIBUTIONS (AI / LLM) POLICY
 
 Please refrain from submitting issues or pull requests that have been generated by an LLM or other fully-automated tools. Any submission that is in violation of this policy will be closed, and the submitter may be blocked from this repository without warning.
 
-If you submit an issue, you need to understand what your issue description is saying. You need to be able to answer questions about your bug report or feature request. Using an AI tool to *proofread* your issue/comment text is acceptable. Using an AI tool to *write* your issue/comment text is unacceptable.
+If you submit an issue, you need to understand what your issue description is saying. You need to be able to answer questions about your bug report or feature request. Using an AI tool to _proofread_ your issue/comment text is acceptable. Using an AI tool to _write_ your issue/comment text is unacceptable.
 
 If you submit a pull request, you need to understand what every line of code you've changed does. If you can't explain why your PR is doing something, then do not submit it. Using an AI tool to generate entire lines of code is unacceptable.
 
@@ -147,13 +146,12 @@ The rationale behind this policy is that automated contributions are a waste of 
 
 Additionally, AI-generated code conflicts with this project's license (Unlicense), since you cannot truly release code into the public domain if you didn't author it yourself.
 
-
 # DEVELOPER INSTRUCTIONS
 
 Most users do not need to build yt-dlp and can [download the builds](https://github.com/yt-dlp/yt-dlp/releases), get them via [the other installation methods](README.md#installation) or directly run it using `python -m yt_dlp`.
 
-`yt-dlp` uses [`hatch`](<https://hatch.pypa.io>) as a project management tool.
-You can easily install it using [`pipx`](<https://pipx.pypa.io>) via `pipx install hatch`, or else via `pip` or your package manager of choice. Make sure you are using at least version `1.10.0`, otherwise some functionality might not work as expected.
+`yt-dlp` uses [`hatch`](https://hatch.pypa.io) as a project management tool.
+You can easily install it using [`pipx`](https://pipx.pypa.io) via `pipx install hatch`, or else via `pip` or your package manager of choice. Make sure you are using at least version `1.10.0`, otherwise some functionality might not work as expected.
 
 If you plan on contributing to `yt-dlp`, best practice is to start by running the following command:
 
@@ -166,10 +164,11 @@ The above command will install a `pre-commit` hook so that required checks/fixes
 After this you can use `hatch shell` to enable a virtual environment that has `yt-dlp` and its development dependencies installed.
 
 In addition, the following script commands can be used to run simple tasks such as linting or testing (without having to run `hatch shell` first):
-* `hatch fmt`: Automatically fix linter violations and apply required code formatting changes
-    * See `hatch fmt --help` for more info
-* `hatch test`: Run extractor or core tests
-    * See `hatch test --help` for more info
+
+- `hatch fmt`: Automatically fix linter violations and apply required code formatting changes
+  - See `hatch fmt --help` for more info
+- `hatch test`: Run extractor or core tests
+  - See `hatch test --help` for more info
 
 See item 6 of [new extractor tutorial](#adding-support-for-a-new-site) for how to run extractor specific test cases.
 
@@ -199,13 +198,11 @@ $ autopep8 --diff .
 
 If you want to create a build of yt-dlp yourself, you can follow the instructions [here](README.md#compile).
 
-
 ## Adding new feature or making overarching changes
 
 Before you start writing code for implementing a new feature, open an issue explaining your feature request and at least one use case. This allows the maintainers to decide whether such a feature is desired for the project in the first place, and will provide an avenue to discuss some implementation details. If you open a pull request for a new feature without discussing with us first, do not be surprised when we ask for large changes to the code, or even reject it outright.
 
 The same applies for changes to the documentation, code style, or overarching changes to the architecture
-
 
 ## Adding support for a new site
 
@@ -216,93 +213,95 @@ After you have ensured this site is distributing its content legally, you can fo
 1. [Fork this repository](https://github.com/yt-dlp/yt-dlp/fork)
 1. Check out the source code with:
 
-    ```shell
-    $ git clone git@github.com:YOUR_GITHUB_USERNAME/yt-dlp.git
-    ```
+   ```shell
+   $ git clone git@github.com:YOUR_GITHUB_USERNAME/yt-dlp.git
+   ```
 
 1. Start a new git branch with
 
-    ```shell
-    $ cd yt-dlp
-    $ git checkout -b yourextractor
-    ```
+   ```shell
+   $ cd yt-dlp
+   $ git checkout -b yourextractor
+   ```
 
 1. Start with this simple template and save it to `yt_dlp/extractor/yourextractor.py`:
 
-    ```python
-    from .common import InfoExtractor
+   ```python
+   from .common import InfoExtractor
 
 
-    class YourExtractorIE(InfoExtractor):
-        _VALID_URL = r'https?://(?:www\.)?yourextractor\.com/watch/(?P<id>[0-9]+)'
-        _TESTS = [{
-            'url': 'https://yourextractor.com/watch/42',
-            'md5': 'TODO: md5 sum of the first 10241 bytes of the video file (use --test)',
-            'info_dict': {
-                # For videos, only the 'id' and 'ext' fields are required to RUN the test:
-                'id': '42',
-                'ext': 'mp4',
-                # Then if the test run fails, it will output the missing/incorrect fields.
-                # Properties can be added as:
-                # * A value, e.g.
-                #     'title': 'Video title goes here',
-                # * MD5 checksum; start the string with 'md5:', e.g.
-                #     'description': 'md5:098f6bcd4621d373cade4e832627b4f6',
-                # * A regular expression; start the string with 're:', e.g.
-                #     'thumbnail': r're:https?://.*\.jpg$',
-                # * A count of elements in a list; start the string with 'count:', e.g.
-                #     'tags': 'count:10',
-                # * Any Python type, e.g.
-                #     'view_count': int,
-            }
-        }]
+   class YourExtractorIE(InfoExtractor):
+       _VALID_URL = r'https?://(?:www\.)?yourextractor\.com/watch/(?P<id>[0-9]+)'
+       _TESTS = [{
+           'url': 'https://yourextractor.com/watch/42',
+           'md5': 'TODO: md5 sum of the first 10241 bytes of the video file (use --test)',
+           'info_dict': {
+               # For videos, only the 'id' and 'ext' fields are required to RUN the test:
+               'id': '42',
+               'ext': 'mp4',
+               # Then if the test run fails, it will output the missing/incorrect fields.
+               # Properties can be added as:
+               # * A value, e.g.
+               #     'title': 'Video title goes here',
+               # * MD5 checksum; start the string with 'md5:', e.g.
+               #     'description': 'md5:098f6bcd4621d373cade4e832627b4f6',
+               # * A regular expression; start the string with 're:', e.g.
+               #     'thumbnail': r're:https?://.*\.jpg$',
+               # * A count of elements in a list; start the string with 'count:', e.g.
+               #     'tags': 'count:10',
+               # * Any Python type, e.g.
+               #     'view_count': int,
+           }
+       }]
 
-        def _real_extract(self, url):
-            video_id = self._match_id(url)
-            webpage = self._download_webpage(url, video_id)
+       def _real_extract(self, url):
+           video_id = self._match_id(url)
+           webpage = self._download_webpage(url, video_id)
 
-            # TODO more code goes here, for example ...
-            title = self._html_search_regex(r'<h1>(.+?)</h1>', webpage, 'title')
+           # TODO more code goes here, for example ...
+           title = self._html_search_regex(r'<h1>(.+?)</h1>', webpage, 'title')
 
-            return {
-                'id': video_id,
-                'title': title,
-                'description': self._og_search_description(webpage),
-                'uploader': self._search_regex(r'<div[^>]+id="uploader"[^>]*>([^<]+)<', webpage, 'uploader', fatal=False),
-                # TODO more properties (see yt_dlp/extractor/common.py)
-            }
-    ```
+           return {
+               'id': video_id,
+               'title': title,
+               'description': self._og_search_description(webpage),
+               'uploader': self._search_regex(r'<div[^>]+id="uploader"[^>]*>([^<]+)<', webpage, 'uploader', fatal=False),
+               # TODO more properties (see yt_dlp/extractor/common.py)
+           }
+   ```
+
 1. Add an import in [`yt_dlp/extractor/_extractors.py`](yt_dlp/extractor/_extractors.py). Note that the class name must end with `IE`. Also note that when adding a parenthesized import group, the last import in the group must have a trailing comma in order for this formatting to be respected by our code formatter.
-1. Run `hatch test YourExtractor`. This *may fail* at first, but you can continually re-run it until you're done. Upon failure, it will output the missing fields and/or correct values which you can copy. If you decide to add more than one test, the tests will then be named `YourExtractor`, `YourExtractor_1`, `YourExtractor_2`, etc. Note that tests with an `only_matching` key in the test's dict are not included in the count. You can also run all the tests in one go with `YourExtractor_all`
+1. Run `hatch test YourExtractor`. This _may fail_ at first, but you can continually re-run it until you're done. Upon failure, it will output the missing fields and/or correct values which you can copy. If you decide to add more than one test, the tests will then be named `YourExtractor`, `YourExtractor_1`, `YourExtractor_2`, etc. Note that tests with an `only_matching` key in the test's dict are not included in the count. You can also run all the tests in one go with `YourExtractor_all`
 1. Make sure you have at least one test for your extractor. Even if all videos covered by the extractor are expected to be inaccessible for automated testing, tests should still be added with a `skip` parameter indicating why the particular test is disabled from running.
 1. Have a look at [`yt_dlp/extractor/common.py`](yt_dlp/extractor/common.py) for possible helper methods and a [detailed description of what your extractor should and may return](yt_dlp/extractor/common.py#L119-L440). Add tests and code for as many as you want.
 1. Make sure your code follows [yt-dlp coding conventions](#yt-dlp-coding-conventions), passes [ruff](https://docs.astral.sh/ruff/tutorial/#getting-started) code checks and is properly formatted:
 
-    ```shell
-    $ hatch fmt --check
-    ```
+   ```shell
+   $ hatch fmt --check
+   ```
 
-    You can use `hatch fmt` to automatically fix problems. Rules that the linter/formatter enforces should not be disabled with `# noqa` unless a maintainer requests it. The only exception allowed is for old/printf-style string formatting in GraphQL query templates (use `# noqa: UP031`).
+   You can use `hatch fmt` to automatically fix problems. Rules that the linter/formatter enforces should not be disabled with `# noqa` unless a maintainer requests it. The only exception allowed is for old/printf-style string formatting in GraphQL query templates (use `# noqa: UP031`).
 
 1. Make sure your code works under all [Python](https://www.python.org/) versions supported by yt-dlp, namely CPython >=3.10 and PyPy >=3.11. Backward compatibility is not required for even older versions of Python.
 1. When the tests pass, [add](https://git-scm.com/docs/git-add) the new files, [commit](https://git-scm.com/docs/git-commit) them and [push](https://git-scm.com/docs/git-push) the result, like this:
 
-    ```shell
-    $ git add yt_dlp/extractor/_extractors.py
-    $ git add yt_dlp/extractor/yourextractor.py
-    $ git commit -m '[yourextractor] Add extractor'
-    $ git push origin yourextractor
-    ```
+   ```shell
+   $ git add yt_dlp/extractor/_extractors.py
+   $ git add yt_dlp/extractor/yourextractor.py
+   $ git commit -m '[yourextractor] Add extractor'
+   $ git push origin yourextractor
+   ```
 
 1. Finally, [create a pull request](https://help.github.com/articles/creating-a-pull-request). We'll then review and merge it.
 
 In any case, thank you very much for your contributions!
 
 **Tip:** To test extractors that require login information, create a file `test/local_parameters.json` and add `"usenetrc": true` or your `username`&`password` or `cookiefile`/`cookiesfrombrowser` in it:
+
 ```json
 {
-    "username": "your user name",
-    "password": "your password"
+  "username": "your user name",
+  "password": "your password"
 }
 ```
 
@@ -312,13 +311,12 @@ This section introduces a guide lines for writing idiomatic, robust and future-p
 
 Extractors are very fragile by nature since they depend on the layout of the source data provided by 3rd party media hosters out of your control and this layout tends to change. As an extractor implementer your task is not only to write code that will extract media links and metadata correctly but also to minimize dependency on the source's layout and even to make the code foresee potential future changes and be ready for that. This is important because it will allow the extractor not to break on minor layout changes thus keeping old yt-dlp versions working. Even though this breakage issue may be easily fixed by a new version of yt-dlp, this could take some time, during which the extractor will remain broken.
 
-
 ### Mandatory and optional metafields
 
-For extraction to work yt-dlp relies on metadata your extractor extracts and provides to yt-dlp expressed by an [information dictionary](yt_dlp/extractor/common.py#L119-L440) or simply *info dict*. Only the following meta fields in the *info dict* are considered mandatory for a successful extraction process by yt-dlp:
+For extraction to work yt-dlp relies on metadata your extractor extracts and provides to yt-dlp expressed by an [information dictionary](yt_dlp/extractor/common.py#L119-L440) or simply _info dict_. Only the following meta fields in the _info dict_ are considered mandatory for a successful extraction process by yt-dlp:
 
- - `id` (media identifier)
- - `url` (media download URL) or `formats`
+- `id` (media identifier)
+- `url` (media download URL) or `formats`
 
 The aforementioned metadata fields are the critical data without which extraction does not make any sense. If any of them fail to be extracted, then the extractor is considered broken. All other metadata extraction should be completely non-fatal.
 
@@ -362,7 +360,6 @@ description = meta['summary']  # incorrect
 
 The latter will break extraction process with `KeyError` if `summary` disappears from `meta` at some later time but with the former approach extraction will just go ahead with `description` set to `None` which is perfectly fine (remember `None` is equivalent to the absence of data).
 
-
 If the data is nested, do not use `.get` chains, but instead make use of `traverse_obj`.
 
 Considering the above `meta` again, assume you want to extract `["user"]["name"]` and put it in the resulting info dict as `uploader`
@@ -376,15 +373,18 @@ and not like:
 ```python
 uploader = meta['user']['name']  # incorrect
 ```
+
 or
+
 ```python
 uploader = meta.get('user', {}).get('name')  # incorrect
 ```
+
 or
+
 ```python
 uploader = try_get(meta, lambda x: x['user']['name'])  # old utility
 ```
-
 
 Similarly, you should pass `fatal=False` when extracting optional data from a webpage with `_search_regex`, `_html_search_regex` or similar methods, for instance:
 
@@ -405,7 +405,6 @@ description = self._search_regex(
 ```
 
 On failure this code will silently continue the extraction with `description` set to `None`. That is useful for metafields that may or may not be present.
-
 
 Another thing to remember is not to try to iterate over `None`
 
@@ -450,7 +449,6 @@ thumbnails = traverse_obj(data, ('thumbnails', ..., {'url': 'url', 'height': 'h'
 
 When extracting metadata try to do so from multiple sources. For example if `title` is present in several places, try extracting from at least some of them. This makes it more future-proof in case some of the sources become unavailable.
 
-
 #### Example
 
 Say `meta` from the previous example has a `title` and you are about to extract it like:
@@ -469,7 +467,6 @@ title = meta.get('title') or self._og_search_title(webpage)
 
 This code will try to extract from `meta` first and if it fails it will try extracting `og:title` from a `webpage`, making the extractor more robust.
 
-
 ### Regular expressions
 
 #### Don't capture groups you don't use
@@ -487,6 +484,7 @@ r'(?:id|ID)=(?P<id>\d+)'
 ```
 
 Incorrect:
+
 ```python
 r'(id|ID)=(?P<id>\d+)'
 ```
@@ -500,7 +498,11 @@ When using regular expressions try to write them fuzzy, relaxed and flexible, sk
 Say you need to extract `title` from the following HTML code:
 
 ```html
-<span style="position: absolute; left: 910px; width: 90px; float: right; z-index: 9999;" class="title">some fancy title</span>
+<span
+  style="position: absolute; left: 910px; width: 90px; float: right; z-index: 9999;"
+  class="title"
+  >some fancy title</span
+>
 ```
 
 The code for that task should look similar to:
@@ -538,10 +540,9 @@ title = self._search_regex(  # incorrect
 
 Here the presence or absence of other attributes including `style` is irrelevant for the data we need, and so the regex must not depend on it
 
-
 #### Keep the regular expressions as simple as possible, but no simpler
 
-Since many extractors deal with unstructured data provided by websites, we will often need to use very complex regular expressions. You should try to use the *simplest* regex that can accomplish what you want. In other words, each part of the regex must have a reason for existing. If you can take out a symbol and the functionality does not change, the symbol should not be there.
+Since many extractors deal with unstructured data provided by websites, we will often need to use very complex regular expressions. You should try to use the _simplest_ regex that can accomplish what you want. In other words, each part of the regex must have a reason for existing. If you can take out a symbol and the functionality does not change, the symbol should not be there.
 
 ##### Example
 
@@ -572,7 +573,6 @@ Incorrect:
 ```python
 title = self._search_regex(r'<span\b.*class="title".*>(.+?)<', webpage, 'title')
 ```
-
 
 ### Long lines policy
 
@@ -632,11 +632,9 @@ formats = self._extract_m3u8_formats(m3u8_url,
                                      errnote='Unable to download HD m3u8 information')
 ```
 
-
 ### Quotes
 
-Always use single quotes for strings (even if the string has `'`) and double quotes for docstrings. Use `'''` only for multi-line strings. An exception can be made if a string has multiple single quotes in it and escaping makes it *significantly* harder to read. For f-strings, use you can use double quotes on the inside. But avoid f-strings that have too many quotes inside.
-
+Always use single quotes for strings (even if the string has `'`) and double quotes for docstrings. Use `'''` only for multi-line strings. An exception can be made if a string has multiple single quotes in it and escaping makes it _significantly_ harder to read. For f-strings, use you can use double quotes on the inside. But avoid f-strings that have too many quotes inside.
 
 ### Inline values
 
@@ -666,7 +664,6 @@ return {
 }
 ```
 
-
 ### Collapse fallbacks
 
 Multiple fallback values can quickly become unwieldy. Collapse multiple fallback values into a single expression via a list of patterns.
@@ -692,7 +689,6 @@ description = (
 
 Methods supporting list of patterns are: `_search_regex`, `_html_search_regex`, `_og_search_property`, `_html_search_meta`.
 
-
 ### Trailing parentheses
 
 Always move trailing parentheses used for grouping/functions after the last argument. On the other hand, multi-line literal list/tuple/dict/set should closed be in a new line. Generators and list/dict comprehensions may use either style
@@ -705,6 +701,7 @@ Correct:
 url = traverse_obj(info, (
     'context', 'dispatcher', 'stores', 'VideoTitlePageStore', 'data', 'video', 0, 'VideoUrlSet', 'VideoUrl'), list)
 ```
+
 Correct:
 
 ```python
@@ -756,7 +753,6 @@ formats = [
 ]
 ```
 
-
 ### Use convenience conversion and parsing functions
 
 Wrap all extracted numeric data into safe functions from [`yt_dlp/utils/`](yt_dlp/utils/): `int_or_none`, `float_or_none`. Use them for string to number conversions as well.
@@ -779,11 +775,10 @@ duration = float_or_none(video.get('durationMs'), scale=1000)
 view_count = int_or_none(video.get('views'))
 ```
 
-
 ## My pull request is labeled pending-fixes
 
 The `pending-fixes` label is added when there are changes requested to a PR. When the necessary changes are made, the label should be removed. However, despite our best efforts, it may sometimes happen that the maintainer did not see the changes or forgot to remove the label. If your PR is still marked as `pending-fixes` a few days after all requested changes have been made, feel free to ping the maintainer who labeled your issue and ask them to re-review and remove the label.
 
-
 # EMBEDDING YT-DLP
+
 See [README.md#embedding-yt-dlp](README.md#embedding-yt-dlp) for instructions on how to embed yt-dlp in another Python program

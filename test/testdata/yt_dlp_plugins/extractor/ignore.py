@@ -6,8 +6,8 @@ class IgnoreNotInAllPluginIE(InfoExtractor):
 
 
 class InAllPluginIE(InfoExtractor):
-    _VALID_URL = 'inallpluginie'
+    _VALID_URL = "inallpluginie"
     pass
 
 
-__all__ = ['InAllPluginIE']
+__all__ = ["InAllPluginIE"]

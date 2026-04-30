@@ -19,8 +19,8 @@ class YoutubeDL(yt_dlp.YoutubeDL):
         self.to_stderr = self.to_screen
 
 
-TEST_ID = 'gr51aVj-mLg'
-EXPECTED_NAME = 'gr51aVj-mLg'
+TEST_ID = "gr51aVj-mLg"
+EXPECTED_NAME = "gr51aVj-mLg"
 
 
 @is_download_test
@@ -28,24 +28,30 @@ class TestPostHooks(unittest.TestCase):
     def setUp(self):
         self.stored_name_1 = None
         self.stored_name_2 = None
-        self.params = get_params({
-            'skip_download': False,
-            'writeinfojson': False,
-            'quiet': True,
-            'verbose': False,
-            'cachedir': False,
-        })
+        self.params = get_params(
+            {
+                "skip_download": False,
+                "writeinfojson": False,
+                "quiet": True,
+                "verbose": False,
+                "cachedir": False,
+            }
+        )
         self.files = []
 
     def test_post_hooks(self):
-        self.params['post_hooks'] = [self.hook_one, self.hook_two]
+        self.params["post_hooks"] = [self.hook_one, self.hook_two]
         ydl = YoutubeDL(self.params)
         ydl.download([TEST_ID])
-        self.assertEqual(self.stored_name_1, EXPECTED_NAME, 'Not the expected name from hook 1')
-        self.assertEqual(self.stored_name_2, EXPECTED_NAME, 'Not the expected name from hook 2')
+        self.assertEqual(
+            self.stored_name_1, EXPECTED_NAME, "Not the expected name from hook 1"
+        )
+        self.assertEqual(
+            self.stored_name_2, EXPECTED_NAME, "Not the expected name from hook 2"
+        )
 
     def test_post_hook_exception(self):
-        self.params['post_hooks'] = [self.hook_three]
+        self.params["post_hooks"] = [self.hook_three]
         ydl = YoutubeDL(self.params)
         self.assertRaises(DownloadError, ydl.download, [TEST_ID])
 
@@ -59,12 +65,12 @@ class TestPostHooks(unittest.TestCase):
 
     def hook_three(self, filename):
         self.files.append(filename)
-        raise Exception(f'Test exception for \'{filename}\'')
+        raise Exception(f"Test exception for '{filename}'")
 
     def tearDown(self):
         for f in self.files:
             try_rm(f)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

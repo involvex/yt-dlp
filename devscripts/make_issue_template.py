@@ -11,7 +11,7 @@ import re
 
 from devscripts.utils import get_filename_args, read_file, write_file
 
-VERBOSE = '''
+VERBOSE = """
   - type: checkboxes
     id: verbose
     attributes:
@@ -49,27 +49,29 @@ VERBOSE = '''
       render: shell
     validations:
       required: true
-'''.strip()
+""".strip()
 
-NO_SKIP = '''
+NO_SKIP = """
   - type: markdown
     attributes:
       value: |
         > [!IMPORTANT]
         > Not providing the required (*) information or removing the template will result in your issue being closed and ignored.
-'''.strip()
+""".strip()
 
 
 def main():
     fields = {
-        'no_skip': NO_SKIP,
-        'verbose': VERBOSE,
-        'verbose_optional': re.sub(r'(\n\s+validations:)?\n\s+required: true', '', VERBOSE),
+        "no_skip": NO_SKIP,
+        "verbose": VERBOSE,
+        "verbose_optional": re.sub(
+            r"(\n\s+validations:)?\n\s+required: true", "", VERBOSE
+        ),
     }
 
     infile, outfile = get_filename_args(has_infile=True)
     write_file(outfile, read_file(infile) % fields)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

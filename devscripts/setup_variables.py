@@ -9,8 +9,7 @@ import json
 
 from devscripts.utils import calculate_version
 
-
-STABLE_REPOSITORY = 'yt-dlp/yt-dlp'
+STABLE_REPOSITORY = "yt-dlp/yt-dlp"
 
 
 def setup_variables(environment):
@@ -29,115 +28,119 @@ def setup_variables(environment):
         source_repo, source_tag,
         target_repo, target_tag
     """
-    REPOSITORY = environment['REPOSITORY']
-    INPUTS = json.loads(environment['INPUTS'])
-    PROCESSED = json.loads(environment['PROCESSED'])
+    REPOSITORY = environment["REPOSITORY"]
+    INPUTS = json.loads(environment["INPUTS"])
+    PROCESSED = json.loads(environment["PROCESSED"])
 
     source_channel = None
     pypi_project = None
     pypi_suffix = None
 
-    source_repo = PROCESSED['source_repo']
-    source_tag = PROCESSED['source_tag']
-    if source_repo == 'stable':
+    source_repo = PROCESSED["source_repo"]
+    source_tag = PROCESSED["source_tag"]
+    if source_repo == "stable":
         source_repo = STABLE_REPOSITORY
     if not source_repo:
         source_repo = REPOSITORY
-    elif environment['SOURCE_ARCHIVE_REPO']:
-        source_channel = environment['SOURCE_ARCHIVE_REPO']
-    elif not source_tag and '/' not in source_repo:
+    elif environment["SOURCE_ARCHIVE_REPO"]:
+        source_channel = environment["SOURCE_ARCHIVE_REPO"]
+    elif not source_tag and "/" not in source_repo:
         source_tag = source_repo
         source_repo = REPOSITORY
 
     resolved_source = source_repo
     if source_tag:
-        resolved_source = f'{resolved_source}@{source_tag}'
+        resolved_source = f"{resolved_source}@{source_tag}"
     elif source_repo == STABLE_REPOSITORY:
-        resolved_source = 'stable'
+        resolved_source = "stable"
 
     revision = None
-    if INPUTS['prerelease'] or not json.loads(environment['HAS_RELEASE_KEY']):
-        revision = dt.datetime.now(tz=dt.timezone.utc).strftime('%H%M%S')
+    if INPUTS["prerelease"] or not json.loads(environment["HAS_RELEASE_KEY"]):
+        revision = dt.datetime.now(tz=dt.timezone.utc).strftime("%H%M%S")
 
-    version = calculate_version(INPUTS.get('version') or revision)
+    version = calculate_version(INPUTS.get("version") or revision)
 
-    target_repo = PROCESSED['target_repo']
-    target_tag = PROCESSED['target_tag']
+    target_repo = PROCESSED["target_repo"]
+    target_tag = PROCESSED["target_tag"]
     if target_repo:
-        if target_repo == 'stable':
+        if target_repo == "stable":
             target_repo = STABLE_REPOSITORY
         if not target_tag:
             if target_repo == STABLE_REPOSITORY:
                 target_tag = version
-            elif environment['TARGET_ARCHIVE_REPO']:
+            elif environment["TARGET_ARCHIVE_REPO"]:
                 target_tag = source_tag or version
             else:
                 target_tag = target_repo
                 target_repo = REPOSITORY
         if target_repo != REPOSITORY:
-            target_repo = environment['TARGET_ARCHIVE_REPO']
-            pypi_project = environment['TARGET_PYPI_PROJECT'] or None
-            pypi_suffix = environment['TARGET_PYPI_SUFFIX'] or None
+            target_repo = environment["TARGET_ARCHIVE_REPO"]
+            pypi_project = environment["TARGET_PYPI_PROJECT"] or None
+            pypi_suffix = environment["TARGET_PYPI_SUFFIX"] or None
     else:
         target_tag = source_tag or version
         if source_channel:
             target_repo = source_channel
-            pypi_project = environment['SOURCE_PYPI_PROJECT'] or None
-            pypi_suffix = environment['SOURCE_PYPI_SUFFIX'] or None
+            pypi_project = environment["SOURCE_PYPI_PROJECT"] or None
+            pypi_suffix = environment["SOURCE_PYPI_SUFFIX"] or None
         else:
             target_repo = REPOSITORY
 
-    if target_repo != REPOSITORY and not json.loads(environment['HAS_ARCHIVE_REPO_TOKEN']):
+    if target_repo != REPOSITORY and not json.loads(
+        environment["HAS_ARCHIVE_REPO_TOKEN"]
+    ):
         return None
 
-    if target_repo == REPOSITORY and not INPUTS['prerelease']:
-        pypi_project = environment['PYPI_PROJECT'] or None
+    if target_repo == REPOSITORY and not INPUTS["prerelease"]:
+        pypi_project = environment["PYPI_PROJECT"] or None
 
     return {
-        'channel': resolved_source,
-        'version': version,
-        'target_repo': target_repo,
-        'target_tag': target_tag,
-        'pypi_project': pypi_project,
-        'pypi_suffix': pypi_suffix,
+        "channel": resolved_source,
+        "version": version,
+        "target_repo": target_repo,
+        "target_tag": target_tag,
+        "pypi_project": pypi_project,
+        "pypi_suffix": pypi_suffix,
     }
 
 
 def process_inputs(inputs):
     outputs = {}
-    for key in ('source', 'target'):
-        repo, _, tag = inputs.get(key, '').partition('@')
-        outputs[f'{key}_repo'] = repo
-        outputs[f'{key}_tag'] = tag
+    for key in ("source", "target"):
+        repo, _, tag = inputs.get(key, "").partition("@")
+        outputs[f"{key}_repo"] = repo
+        outputs[f"{key}_tag"] = tag
     return outputs
 
 
-if __name__ == '__main__':
-    if not os.getenv('GITHUB_OUTPUT'):
-        print('This script is only intended for use with GitHub Actions', file=sys.stderr)
+if __name__ == "__main__":
+    if not os.getenv("GITHUB_OUTPUT"):
+        print(
+            "This script is only intended for use with GitHub Actions", file=sys.stderr
+        )
         sys.exit(1)
 
-    if 'process_inputs' in sys.argv:
-        inputs = json.loads(os.environ['INPUTS'])
-        print('::group::Inputs')
+    if "process_inputs" in sys.argv:
+        inputs = json.loads(os.environ["INPUTS"])
+        print("::group::Inputs")
         print(json.dumps(inputs, indent=2))
-        print('::endgroup::')
+        print("::endgroup::")
         outputs = process_inputs(inputs)
-        print('::group::Processed')
+        print("::group::Processed")
         print(json.dumps(outputs, indent=2))
-        print('::endgroup::')
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-            f.write('\n'.join(f'{key}={value}' for key, value in outputs.items()))
+        print("::endgroup::")
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write("\n".join(f"{key}={value}" for key, value in outputs.items()))
         sys.exit(0)
 
     outputs = setup_variables(dict(os.environ))
     if not outputs:
-        print('::error::Repository access secret ARCHIVE_REPO_TOKEN not found')
+        print("::error::Repository access secret ARCHIVE_REPO_TOKEN not found")
         sys.exit(1)
 
-    print('::group::Output variables')
+    print("::group::Output variables")
     print(json.dumps(outputs, indent=2))
-    print('::endgroup::')
+    print("::endgroup::")
 
-    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-        f.write('\n'.join(f'{key}={value or ""}' for key, value in outputs.items()))
+    with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+        f.write("\n".join(f'{key}={value or ""}' for key, value in outputs.items()))

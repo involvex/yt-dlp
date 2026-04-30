@@ -12,9 +12,13 @@ if (fs.existsSync(powershellCompletion)) {
   console.log("To enable it, add this to your PowerShell profile:");
   console.log(`  . "${powershellCompletion}"`);
   console.log("\\nOr run:");
-  console.log("  Copy-Item -Path completions\\\\yt-dlp.ps1 -Destination $PROFILE");
+  console.log(
+    "  Copy-Item -Path completions\\\\yt-dlp.ps1 -Destination $PROFILE",
+  );
 } else {
-  console.log("PowerShell completion not found. Run: bun run generate-completion");
+  console.log(
+    "PowerShell completion not found. Run: bun run generate-completion",
+  );
 }
 
 console.log("\\n@involvex/yt-dlp is ready to use!");

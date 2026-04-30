@@ -14,17 +14,17 @@ from yt_dlp.utils import DownloadError
 
 
 def _download_restricted(url, filename, age):
-    """ Returns true if the file has been downloaded """
+    """Returns true if the file has been downloaded"""
 
     params = {
-        'age_limit': age,
-        'skip_download': True,
-        'writeinfojson': True,
-        'outtmpl': '%(id)s.%(ext)s',
+        "age_limit": age,
+        "skip_download": True,
+        "writeinfojson": True,
+        "outtmpl": "%(id)s.%(ext)s",
     }
     ydl = YoutubeDL(params)
     ydl.add_default_info_extractors()
-    json_filename = os.path.splitext(filename)[0] + '.info.json'
+    json_filename = os.path.splitext(filename)[0] + ".info.json"
     try_rm(json_filename)
     try:
         ydl.download([url])
@@ -43,13 +43,16 @@ class TestAgeRestriction(unittest.TestCase):
         self.assertFalse(_download_restricted(url, filename, age))
 
     def test_youtube(self):
-        self._assert_restricted('HtVdAasjOgU', 'HtVdAasjOgU.mp4', 10)
+        self._assert_restricted("HtVdAasjOgU", "HtVdAasjOgU.mp4", 10)
 
     def test_youporn(self):
         self._assert_restricted(
-            'https://www.youporn.com/watch/16715086/sex-ed-in-detention-18-asmr/',
-            '16715086.mp4', 2, old_age=25)
+            "https://www.youporn.com/watch/16715086/sex-ed-in-detention-18-asmr/",
+            "16715086.mp4",
+            2,
+            old_age=25,
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

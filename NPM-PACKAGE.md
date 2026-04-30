@@ -33,6 +33,7 @@ Successfully created a comprehensive npm package for yt-dlp with TypeScript API,
 ## Features Implemented
 
 ### 1. TypeScript API
+
 - **Main Class**: `YtDlp` with comprehensive methods
 - **Core Functions**:
   - `download(url, options)` - Download videos with options
@@ -43,18 +44,21 @@ Successfully created a comprehensive npm package for yt-dlp with TypeScript API,
 - **Error Handling**: Proper error handling and validation
 
 ### 2. CLI Wrapper
+
 - **Binary Detection**: Automatic platform and architecture detection
 - **Cross-Platform**: Support for Windows, macOS, and Linux
 - **Streaming**: Proper stdout/stderr streaming
 - **Exit Codes**: Correct exit code handling
 
 ### 3. Binary Management
+
 - **Platform Detection**: Automatic detection of OS and architecture
 - **Path Resolution**: Smart binary path resolution with fallbacks
 - **Validation**: Binary validation and version checking
 - **Fallback**: Support for system-installed yt-dlp as fallback
 
 ### 4. PowerShell Completion
+
 - **Dynamic Generation**: Automatic flag extraction from yt-dlp
 - **Comprehensive Coverage**: All 200+ yt-dlp flags included
 - **Smart Completion**:
@@ -66,6 +70,7 @@ Successfully created a comprehensive npm package for yt-dlp with TypeScript API,
 - **Installation**: Easy installation instructions for current user and all users
 
 ### 5. Build System
+
 - **TypeScript Compilation**: Full TypeScript to JavaScript compilation
 - **Type Definitions**: Automatic generation of .d.ts files
 - **Source Maps**: Source map generation for debugging
@@ -92,23 +97,28 @@ import { createYtDlp } from "@involvex/yt-dlp";
 
 async function main() {
   const ytdlp = await createYtDlp();
-  
+
   // Download a video
-  const result = await ytdlp.download("https://www.youtube.com/watch?v=VIDEO_ID", {
-    format: "best",
-    output: "%(title)s.%(ext)s",
-  });
-  
+  const result = await ytdlp.download(
+    "https://www.youtube.com/watch?v=VIDEO_ID",
+    {
+      format: "best",
+      output: "%(title)s.%(ext)s",
+    },
+  );
+
   // Get video info
   const info = await ytdlp.getInfo("https://www.youtube.com/watch?v=VIDEO_ID");
   console.log(info.title, info.uploader, info.duration);
-  
+
   // List formats
-  const formats = await ytdlp.listFormats("https://www.youtube.com/watch?v=VIDEO_ID");
-  formats.forEach(format => {
+  const formats = await ytdlp.listFormats(
+    "https://www.youtube.com/watch?v=VIDEO_ID",
+  );
+  formats.forEach((format) => {
     console.log(format.formatId, format.ext, format.resolution);
   });
-  
+
   // Execute custom command
   const result = await ytdlp.exec(["--list-extractors"]);
   console.log(result.stdout);
@@ -157,6 +167,7 @@ bun test
 ## Package Configuration
 
 ### package.json
+
 - **Name**: `@involvex/yt-dlp`
 - **Version**: `2026.03.17`
 - **Type**: ES Module
@@ -166,6 +177,7 @@ bun test
 - **License**: Unlicense
 
 ### Dependencies
+
 - **Runtime**: None (uses system binaries)
 - **Development**: `@types/node`, `typescript`
 
@@ -183,6 +195,7 @@ All core functionality has been tested and verified:
 ## Next Steps
 
 ### Binary Bundling
+
 The package currently uses system-installed yt-dlp binaries. To bundle platform-specific binaries:
 
 1. Download official yt-dlp releases from GitHub
@@ -191,6 +204,7 @@ The package currently uses system-installed yt-dlp binaries. To bundle platform-
 4. Add binaries to npm package (will increase package size by ~15-20MB per platform)
 
 ### Additional Features
+
 - Add more comprehensive error handling
 - Implement progress reporting for downloads
 - Add event emitters for download progress
@@ -199,6 +213,7 @@ The package currently uses system-installed yt-dlp binaries. To bundle platform-
 - Implement CI/CD pipeline
 
 ### Publishing
+
 To publish to npm:
 
 ```bash
@@ -229,6 +244,7 @@ npm publish --access public
 ## Summary
 
 Successfully created a production-ready npm package for yt-dlp with:
+
 - ✅ Full TypeScript API with type safety
 - ✅ CLI wrapper with cross-platform support
 - ✅ Comprehensive PowerShell completion

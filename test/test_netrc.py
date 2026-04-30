@@ -21,8 +21,9 @@ class TestNetRc(unittest.TestCase):
                 continue
             self.assertTrue(
                 ie._NETRC_MACHINE,
-                f'Extractor {ie.IE_NAME} supports login, but is missing a _NETRC_MACHINE property')
+                f"Extractor {ie.IE_NAME} supports login, but is missing a _NETRC_MACHINE property",
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

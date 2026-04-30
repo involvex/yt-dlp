@@ -20,42 +20,48 @@ import urllib.request
 from test.helper import gettestcases
 
 if len(sys.argv) > 1:
-    METHOD = 'LIST'
-    LIST = open(sys.argv[1]).read().decode('utf8').strip()
+    METHOD = "LIST"
+    LIST = open(sys.argv[1]).read().decode("utf8").strip()
 else:
-    METHOD = 'EURISTIC'
+    METHOD = "EURISTIC"
 
 for test in gettestcases():
-    if METHOD == 'EURISTIC':
+    if METHOD == "EURISTIC":
         try:
-            webpage = urllib.request.urlopen(test['url'], timeout=10).read()
+            webpage = urllib.request.urlopen(test["url"], timeout=10).read()
         except Exception:
-            print('\nFail: {}'.format(test['name']))
+            print("\nFail: {}".format(test["name"]))
             continue
 
-        webpage = webpage.decode('utf8', 'replace')
+        webpage = webpage.decode("utf8", "replace")
 
-        RESULT = 'porn' in webpage.lower()
+        RESULT = "porn" in webpage.lower()
 
-    elif METHOD == 'LIST':
-        domain = urllib.parse.urlparse(test['url']).netloc
+    elif METHOD == "LIST":
+        domain = urllib.parse.urlparse(test["url"]).netloc
         if not domain:
-            print('\nFail: {}'.format(test['name']))
+            print("\nFail: {}".format(test["name"]))
             continue
-        domain = '.'.join(domain.split('.')[-2:])
+        domain = ".".join(domain.split(".")[-2:])
 
-        RESULT = ('.' + domain + '\n' in LIST or '\n' + domain + '\n' in LIST)
+        RESULT = "." + domain + "\n" in LIST or "\n" + domain + "\n" in LIST
 
-    if RESULT and ('info_dict' not in test or 'age_limit' not in test['info_dict']
-                   or test['info_dict']['age_limit'] != 18):
-        print('\nPotential missing age_limit check: {}'.format(test['name']))
+    if RESULT and (
+        "info_dict" not in test
+        or "age_limit" not in test["info_dict"]
+        or test["info_dict"]["age_limit"] != 18
+    ):
+        print("\nPotential missing age_limit check: {}".format(test["name"]))
 
-    elif not RESULT and ('info_dict' in test and 'age_limit' in test['info_dict']
-                         and test['info_dict']['age_limit'] == 18):
-        print('\nPotential false negative: {}'.format(test['name']))
+    elif not RESULT and (
+        "info_dict" in test
+        and "age_limit" in test["info_dict"]
+        and test["info_dict"]["age_limit"] == 18
+    ):
+        print("\nPotential false negative: {}".format(test["name"]))
 
     else:
-        sys.stdout.write('.')
+        sys.stdout.write(".")
     sys.stdout.flush()
 
 print()
