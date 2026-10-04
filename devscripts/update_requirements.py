@@ -77,7 +77,14 @@ BUNDLE_TARGETS = {
     'default': Target(
         extras=['default'],
         # PyPy bundles cffi, which is a transitive dep of brotlicffi, which is only required for PyPy
-        prune_packages=['cffi'],
+        # NB: omit rather than prune. Pruning removes cffi *and* its transitive deps, but PyPy does
+        # not bundle pycparser - it only vendors it inside cffi as cffi._pycparser. Pruning therefore
+        # left pycparser unpinned, and the PyPy jobs failed while installing brotlicffi:
+        #   ERROR: In --require-hashes mode, all requirements must have their versions pinned
+        #     pycparser from ... (from cffi>=1.0.0->brotlicffi==1.2.0.1)
+        # Omitting keeps the pycparser pin (marked non-CPython, so it is only installed where
+        # brotlicffi is) while still not installing cffi over PyPy's bundled copy.
+        omit_packages=['cffi'],
     ),
     'curl-cffi': Target(
         extras=['default', 'curl-cffi'],
