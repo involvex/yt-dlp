@@ -1,6 +1,12 @@
-import { spawnYtDlp, getBinaryInfo, validateBinary } from "./binary.js";
+import {
+  spawnYtDlp,
+  getBinaryInfo,
+  validateBinary,
+  resolveBinary,
+  runYtDlp,
+} from "./binary.js";
 import { promisify } from "util";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import {
   YtDlpOptions,
   DownloadResult,
@@ -9,7 +15,7 @@ import {
   ExecResult,
 } from "./types.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export class YtDlp {
   private binaryPath: string;
@@ -19,8 +25,20 @@ export class YtDlp {
   }
 
   async init(): Promise<void> {
-    const info = await getBinaryInfo();
-    this.binaryPath = info.path;
+    // Resolve the command without requiring the --version probe to succeed: a missing or
+    // mismatched bundled binary must surface when yt-dlp is invoked, not here.
+    this.binaryPath = resolveBinary().path;
+    await getBinaryInfo();
+  }
+
+  /** Run yt-dlp with args passed as an array - never interpolated into a shell string. */
+  private async execBinary(
+    args: string[],
+  ): Promise<{ stdout: string; stderr: string }> {
+    return execFileAsync(this.binaryPath, args, {
+      maxBuffer: 1024 * 1024 * 64,
+      windowsHide: true,
+    });
   }
 
   async download(
@@ -30,9 +48,7 @@ export class YtDlp {
     const args = this.buildArgs(url, options);
 
     try {
-      const { stdout, stderr } = await execAsync(
-        `"${this.binaryPath}" ${args.join(" ")}`,
-      );
+      const { stdout, stderr } = await this.execBinary(args);
 
       return {
         success: true,
@@ -51,9 +67,7 @@ export class YtDlp {
     const args = ["--dump-json", url, ...this.buildOptions(options)];
 
     try {
-      const { stdout } = await execAsync(
-        `"${this.binaryPath}" ${args.join(" ")}`,
-      );
+      const { stdout } = await this.execBinary(args);
       return JSON.parse(stdout);
     } catch (error: any) {
       throw new Error(`Failed to get info: ${error.message}`);
@@ -70,9 +84,7 @@ export class YtDlp {
 
   async exec(args: string[]): Promise<ExecResult> {
     try {
-      const { stdout, stderr } = await execAsync(
-        `"${this.binaryPath}" ${args.join(" ")}`,
-      );
+      const { stdout, stderr } = await this.execBinary(args);
 
       return {
         stdout,
@@ -118,5 +130,6 @@ export async function createYtDlp(): Promise<YtDlp> {
   return ytdlp;
 }
 
-export { getBinaryInfo, validateBinary };
+export { getBinaryInfo, validateBinary, resolveBinary, runYtDlp, spawnYtDlp };
+export type { ResolvedBinary } from "./binary.js";
 export * from "./types.js";

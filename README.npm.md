@@ -55,6 +55,39 @@ console.log("Available formats:", formats);
 main();
 \`\`\`
 
+## Bundled binaries
+
+Native yt-dlp executables are bundled for Windows (x64, x86, arm64), Linux (x64, arm64, musl x64),
+and macOS (universal2, one binary for both Apple Silicon and Intel). The binary matching your
+platform is selected automatically - no configuration needed.
+
+If no matching binary is present, the CLI falls back to a `yt-dlp` found on your `PATH`.
+
+## Android / Termux
+
+**There is no native Android binary.** The yt-dlp project does not publish a Bionic build, and the
+Linux binaries are glibc-linked, so they will not run on Android. The payload bundled for Android is
+the arch-independent Python zipapp, which means **Python must be installed**:
+
+\`\`\`bash
+pkg install python
+pip install -U yt-dlp
+\`\`\`
+
+After that the CLI works normally:
+
+\`\`\`bash
+bunx @involvex/yt-dlp https://www.youtube.com/watch?v=VIDEO_ID
+\`\`\`
+
+\`\`\`bash
+# you can also skip the pip step; the CLI will use yt-dlp from PATH
+pkg install yt-dlp
+\`\`\`
+
+> \`bun build --os android\` only retargets the JavaScript bundle. It does **not** solve the native
+> binary problem and is not required to use this package on Android.
+
 ## PowerShell Completion
 
 The package includes PowerShell completion support. After installation, you can enable it by:
