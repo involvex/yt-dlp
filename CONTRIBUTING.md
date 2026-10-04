@@ -210,6 +210,56 @@ $ autopep8 --diff .
 If you want to create a build of yt-dlp yourself, you can follow the instructions [here](README.md#compile).
 
 
+## Commit message conventions
+
+This repository carries two upstream histories, so commit messages follow **two different conventions**.
+Match the convention to what you are touching.
+
+### Upstream yt-dlp code (`yt_dlp/`, `devscripts/`, `.github/workflows/`, `test/`)
+
+Use upstream yt-dlp's bracketed-scope style:
+
+```shell
+[ie/<site>] Short imperative description (#PR)
+[utils] \`function_name\`: Describe the change (#PR)
+[build] Bump <dependency> to <version> (#PR)
+[cleanup] Minor cleanup
+Release <YYYY.MM.DD>
+```
+
+The scope goes in brackets, the summary is imperative and capitalised, and a PR number is appended
+when one exists. This is the dominant style in the history — **do not convert existing commits to
+Conventional Commits.**
+
+### Node/npm wrapper (`src/`, `scripts/`, `package.json`, `test/*.test.ts`, `tsconfig.json`, `bun.lock`)
+
+The `@involvex/yt-dlp` wrapper is fork-specific code and is **not** upstreamed, so it uses
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+
+```shell
+fix(npm): ship dist/ in tarball and correct bundled binary resolution
+feat(cli): add --json output passthrough
+chore(deps): bump typescript to ^5.6
+refactor(binary): extract the candidate table
+test(npm): guard against the dist/.gitignore trap
+docs(readme): document the Android/Termux setup
+```
+
+* `type`: one of `feat`, `fix`, `chore`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `style`.
+* `scope`: the wrapper area, e.g. `npm`, `cli`, `binary`, `deps`.
+* `!` before the `:` plus a `BREAKING CHANGE:` footer for incompatible changes.
+* Keep the subject under ~72 characters and imperative ("add", not "added").
+
+See [`.gitmessage`](.gitmessage) for a copy-paste template (`git commit` picks it up automatically).
+
+### Branch and pull request conventions
+
+* `integrate-upstream` tracks upstream yt-dlp and is kept mergeable — do not put work directly on it.
+  Branch from it, land changes through a pull request, then merge.
+* The wrapper's own work uses Conventional Commit **branches** such as `fix/…`, `feat/…`.
+* `master` on the fork is the published default branch and is updated by release, not by hand.
+
+
 ## Adding new feature or making overarching changes
 
 Before you start writing code for implementing a new feature, open an issue explaining your feature request and at least one use case. This allows the maintainers to decide whether such a feature is desired for the project in the first place, and will provide an avenue to discuss some implementation details. If you open a pull request for a new feature without discussing with us first, do not be surprised when we ask for large changes to the code, or even reject it outright.
