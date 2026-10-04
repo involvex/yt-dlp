@@ -32,7 +32,7 @@
   },
   "files": [
     "dist",
-    "bin",
+    "bin/yt-dlp.js",
     "binaries",
     "completions",
     "scripts/postinstall.js"
@@ -54,7 +54,8 @@
   "os": [
     "win32",
     "darwin",
-    "linux"
+    "linux",
+    "android"
   ],
   "repository": {
     "type": "git",
@@ -68,8 +69,9 @@
     "generate-completion": "bun run scripts/generate-completion.ts",
     "lint": "eslint src --ext .ts",
     "postinstall": "node scripts/postinstall.js",
-    "prepublishOnly": "bun run build",
-    "test": "bun test"
+    "prepublishOnly": "bun run build && node scripts/verify-package.mjs",
+    "test": "bun test",
+    "verify": "node scripts/verify-package.mjs"
   },
   "type": "module",
   "types": "./dist/index.d.ts",

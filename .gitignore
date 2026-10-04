@@ -70,7 +70,11 @@ cookies
 wine-py2exe/
 py2exe.log
 build/
-dist/
+# Ignore the build output but keep dist/.npmignore tracked. npm treats a nested .gitignore as
+# .npmignore, and an untracked dist/.gitignore containing "*" silently emptied dist/ from every
+# published tarball (2026.8.21 shipped with no dist/ at all).
+dist/*
+!dist/.npmignore
 zip/
 tmp/
 venv/

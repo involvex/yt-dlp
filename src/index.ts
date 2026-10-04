@@ -1,6 +1,11 @@
-import { spawnYtDlp, getBinaryInfo, validateBinary } from "./binary.js";
-import { promisify } from "util";
-import { exec } from "child_process";
+import {
+  spawnYtDlp,
+  getBinaryInfo,
+  validateBinary,
+  resolveBinary,
+  execFileCapture,
+  runYtDlp,
+} from "./binary.js";
 import {
   YtDlpOptions,
   DownloadResult,
@@ -10,8 +15,6 @@ import {
 } from "./types.js";
 import { buildOptionArgs } from "./options.js";
 
-const execAsync = promisify(exec);
-
 export class YtDlp {
   private binaryPath: string;
 
@@ -20,8 +23,19 @@ export class YtDlp {
   }
 
   async init(): Promise<void> {
-    const info = await getBinaryInfo();
-    this.binaryPath = info.path;
+    // No --version probe here: `this.binaryPath` comes from resolveBinary(), and the bundled
+    // PyInstaller onefile has to extract itself to a temp dir on cold start (~9 s). Probing would
+    // double startup for information nothing uses - runCli skips it for the same reason.
+    this.binaryPath = resolveBinary().path;
+  }
+
+  /** Run yt-dlp with args passed as an array - never interpolated into a shell string. */
+  private async execBinary(
+    args: string[],
+  ): Promise<{ stdout: string; stderr: string }> {
+    // execFileCapture routes the zipapp payload (Android/Termux, unsupported arch) through a Python
+    // interpreter, so the programmatic API behaves the same as the CLI on those platforms.
+    return execFileCapture(resolveBinary(), args);
   }
 
   async download(
@@ -31,9 +45,7 @@ export class YtDlp {
     const args = this.buildArgs(url, options);
 
     try {
-      const { stdout, stderr } = await execAsync(
-        `"${this.binaryPath}" ${args.join(" ")}`,
-      );
+      const { stdout, stderr } = await this.execBinary(args);
 
       return {
         success: true,
@@ -52,9 +64,7 @@ export class YtDlp {
     const args = ["--dump-json", url, ...buildOptionArgs(options)];
 
     try {
-      const { stdout } = await execAsync(
-        `"${this.binaryPath}" ${args.join(" ")}`,
-      );
+      const { stdout } = await this.execBinary(args);
       return JSON.parse(stdout);
     } catch (error: any) {
       throw new Error(`Failed to get info: ${error.message}`);
@@ -71,9 +81,7 @@ export class YtDlp {
 
   async exec(args: string[]): Promise<ExecResult> {
     try {
-      const { stdout, stderr } = await execAsync(
-        `"${this.binaryPath}" ${args.join(" ")}`,
-      );
+      const { stdout, stderr } = await this.execBinary(args);
 
       return {
         stdout,
@@ -100,5 +108,6 @@ export async function createYtDlp(): Promise<YtDlp> {
   return ytdlp;
 }
 
-export { getBinaryInfo, validateBinary };
+export { getBinaryInfo, validateBinary, resolveBinary, runYtDlp, spawnYtDlp };
+export type { ResolvedBinary } from "./binary.js";
 export * from "./types.js";
