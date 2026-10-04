@@ -1,0 +1,10 @@
+{
+  "//": "Type-checks everything `tsconfig.json` skips. That config has rootDir=./src and emits into dist/, so adding scripts/ and test/ to it would either fail on rootDir or scatter build output. This config checks them without emitting.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "outDir": null
+  },
+  "include": ["src/**/*", "scripts/**/*", "test/**/*.ts"]
+}

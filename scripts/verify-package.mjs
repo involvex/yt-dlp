@@ -1,12 +1,19 @@
 #!/usr/bin/env node
 /**
- * Publish gate for @involvex/yt-dlp.
+ * Publish gate for @involvex/yt-dlp and its per-platform binary packages.
  *
- * Guards against the two failure modes that shipped in 2026.8.21:
+ * Guards against the failure modes that have actually shipped or nearly shipped here:
  *   1. `dist/` silently excluded from the tarball (a nested `dist/.gitignore` is treated as
  *      `dist/.npmignore`), which made every published install die with ERR_MODULE_NOT_FOUND.
  *   2. Bundled binaries that do not match the platform directory they live in, because the
  *      downloader used one URL for every target and copied the same file into all of them.
+ *   3. A native payload silently dropped from a sub-package tarball by an ignore file - the same
+ *      trap as (1), one level down. The root .gitignore contains `*.exe`, which is exactly the
+ *      pattern the Windows payloads need, so this is asserted rather than assumed.
+ *   4. A sub-package whose `os`/`cpu` does not describe the binary inside it, so npm would install
+ *      a package on the wrong platform.
+ *   5. Version skew between the wrapper and its optional dependencies, which would pair a new
+ *      wrapper with a stale - or nonexistent - binary.
  *
  * Zero dependencies, plain Node ESM. Exits non-zero with a report on failure.
  *
@@ -15,7 +22,7 @@
 
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createReadStream, closeSync, existsSync, openSync, readSync, readdirSync, statSync } from "node:fs";
+import { createReadStream, closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,6 +30,7 @@ import { fileURLToPath } from "node:url";
 // portable form: this script runs in prepublishOnly, so it must not crash on a supported Node.
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BINARIES_DIR = join(ROOT, "binaries");
+const SUBPACKAGES_DIR = join(ROOT, "build", "binary-packages");
 const HEAD_BYTES = 4096;
 
 const results = [];
@@ -73,24 +81,39 @@ const DIR_ARCH = {
   universal2: "universal",
 };
 
-/** Directories that are expected to hold a `python3` zipapp rather than a native binary. */
-const SCRIPT_DIRS = new Set(["any", "android-arm64"]);
+/**
+ * Detected binary architecture -> the npm `cpu` values that can run it.
+ *
+ * A Mach-O universal2 binary satisfies both macOS architectures, which is why the macOS sub-package
+ * declares `cpu: ["x64", "arm64"]` and a single file. Note x86 is published as `ia32`, which is what
+ * Node reports for 32-bit x86 and therefore what npm matches on.
+ */
+const ARCH_TO_NPM_CPU = {
+  x64: ["x64"],
+  x86: ["ia32"],
+  arm64: ["arm64"],
+  arm: ["arm"],
+  universal: ["x64", "arm64"],
+};
+
+/**
+ * Directories that hold a `python3` zipapp rather than a native binary.
+ *
+ * Only `any` remains: it is the arch-independent universal fallback that ships in the main package.
+ * There is deliberately no `android-arm64` directory - Termux is served by this same file, so a
+ * second copy would be a byte-identical duplicate for no benefit.
+ */
+const SCRIPT_DIRS = new Set(["any"]);
 
 /**
  * Duplicate sha256 values that are intentional.
  *
- * The arch-independent zipapp is deliberately stored at both `any/` (universal fallback) and
- * `android-arm64/` (Termux), so those two are the same file by design. Any other duplicate means
- * the downloader wrote one asset into several platform directories - the bug this gate exists for.
+ * Empty, and that is the point. The zipapp used to be stored at both `any/` and `android-arm64/`,
+ * which had to be allowlisted here - and that allowlist is exactly what would have hidden the real
+ * bug, where one asset was copied into every platform directory. With a single zipapp copy and one
+ * distinct upstream asset per native target, any duplicate now means the downloader is wrong.
  */
-const EXPECTED_DUPLICATES = [
-  ["binaries/any/yt-dlp", "binaries/android-arm64/yt-dlp"],
-];
-/** Order-insensitive: both sides are sorted before comparison, because `prev` depends on
- *  readdirSync (filesystem) order and must not decide whether the gate fails. */
-const EXPECTED_DUPLICATE_PAIRS = new Set(
-  EXPECTED_DUPLICATES.map(([a, b]) => [a, b].sort().join(" ")),
-);
+const EXPECTED_DUPLICATE_PAIRS = new Set();
 
 function readHead(path) {
   const fd = openSync(path, "r");
@@ -133,11 +156,46 @@ function detect(buf) {
 }
 
 // ---------------------------------------------------------------------------
+// npm pack
+// ---------------------------------------------------------------------------
+
+/**
+ * File paths npm would include, or null if the command failed.
+ *
+ * execSync (not execFileSync) so the Windows `npm` shim works without `shell: true`.
+ */
+function packFileList(cwd) {
+  const raw = execSync("npm pack --dry-run --json", {
+    cwd,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  // npm 11 returns [{ files: [...] }]; npm 12 returns { "<name>": { files: [...] } }.
+  const parsed = JSON.parse(raw);
+  const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed)[0];
+  return entry.files.map((f) => f.path);
+}
+
+// ---------------------------------------------------------------------------
 // Check 1: tarball contents
 // ---------------------------------------------------------------------------
 
-const REQUIRED = ["dist/cli.js", "dist/index.js", "dist/binary.js"];
-const FORBIDDEN = [/\.whl$/i, /\.tar\.gz$/i, /^dist\/yt-dlp-cl/i];
+const REQUIRED = [
+  "dist/cli.js",
+  "dist/index.js",
+  "dist/binary.js",
+  // The arch-independent zipapp must stay here: it is what Android/Termux and unsupported
+  // architectures fall back to, since no native sub-package covers them.
+  "binaries/any/yt-dlp",
+];
+const FORBIDDEN = [
+  /\.whl$/i,
+  /\.tar\.gz$/i,
+  /^dist\/yt-dlp-cl/i,
+  // No native payload may ship in the wrapper. They are optional dependencies now; a stray copy
+  // here would silently restore the 214 MB install this split exists to remove.
+  /^binaries\/(?!any\/)/,
+];
 
 function checkPackContents() {
   if (!existsSync(join(ROOT, "dist", "cli.js"))) {
@@ -146,45 +204,29 @@ function checkPackContents() {
   }
   record(true, "dist/cli.js on disk", "present");
 
-  let raw;
-  try {
-    // execSync (not execFileSync) so the Windows `npm` shim works without `shell: true`.
-    raw = execSync("npm pack --dry-run --json", {
-      cwd: ROOT,
-      encoding: "utf8",
-      maxBuffer: 32 * 1024 * 1024,
-    });
-  } catch (error) {
-    record(false, "npm pack --dry-run", `command failed: ${String(error.message).split("\n")[0]}`);
-    return;
-  }
-
   let files;
   try {
-    // npm 11 returns [{ files: [...] }]; npm 12 returns { "<name>": { files: [...] } }.
-    const parsed = JSON.parse(raw);
-    const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed)[0];
-    files = entry.files.map((f) => f.path);
+    files = packFileList(ROOT);
   } catch (error) {
-    record(false, "npm pack --dry-run", `could not parse JSON: ${error.message}`);
+    record(false, "npm pack --dry-run", `command failed: ${String(error.message).split("\n")[0]}`);
     return;
   }
 
   const missing = REQUIRED.filter((p) => !files.includes(p));
   record(
     missing.length === 0,
-    "compiled JS in tarball",
+    "compiled JS + zipapp in tarball",
     missing.length === 0 ? `${REQUIRED.join(", ")} present` : `MISSING from tarball: ${missing.join(", ")}`,
   );
 
   const leaked = files.filter((p) => FORBIDDEN.some((re) => re.test(p)));
   record(
     leaked.length === 0,
-    "no Python build artifacts in tarball",
+    "no Python artifacts or native payloads in wrapper tarball",
     leaked.length === 0 ? "clean" : `leaked: ${leaked.join(", ")}`,
   );
 
-  console.log(`  tarball: ${files.length} files`);
+  console.log(`  wrapper tarball: ${files.length} files`);
 }
 
 // ---------------------------------------------------------------------------
@@ -222,7 +264,7 @@ async function checkBinaries() {
   for (const file of files) {
     const rel = file.slice(ROOT.length + 1).split(sep).join("/");
     const dir = basename(dirname(file));
-    const isScriptDir = SCRIPT_DIRS.has(dir) || dir.startsWith("android-");
+    const isScriptDir = SCRIPT_DIRS.has(dir);
     const expected = isScriptDir ? null : DIR_ARCH[dir.split("-").pop()];
     const { kind, arch, detail } = detect(readHead(file));
     const hash = await sha256(file);
@@ -237,9 +279,9 @@ async function checkBinaries() {
         note = `expected a python3 zipapp, found ${kind}`;
       }
     } else if (expected === "universal") {
-      if (kind !== "mach-o") {
+      if (kind !== "mach-o" || arch !== "universal") {
         ok = false;
-        note = `expected a Mach-O universal2 binary, found ${kind}`;
+        note = `expected a Mach-O universal2 binary, found ${kind} ${arch ?? "?"}`;
       }
     } else if (kind === "script") {
       ok = false;
@@ -270,11 +312,206 @@ async function checkBinaries() {
         intentional,
         `duplicate binary ${rel}`,
         intentional
-          ? `same as ${prev} (intentional: arch-independent zipapp)`
+          ? `same as ${prev} (intentional)`
           : `identical sha256 to ${prev} - one asset copied into two platform directories`,
       );
     } else {
       hashes.set(hash, rel);
+    }
+  }
+
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Check 4: per-platform sub-packages
+// ---------------------------------------------------------------------------
+
+/** `@involvex/yt-dlp-binary-linux-x64` -> `involvex-yt-dlp-binary-linux-x64`. */
+function stagingDirName(name) {
+  return name.replace(/^@/, "").replace(/\//g, "-");
+}
+
+/**
+ * `@involvex/yt-dlp-binary-linux-x64` -> `linux-x64`.
+ *
+ * The directory suffix is the package's identity, which is the whole point of the naming scheme, so
+ * it can be recovered without consulting the target table. A name that does not follow the scheme
+ * returns the whole string, which then fails to match anything rather than silently matching wrong.
+ */
+function dirFromPackageName(name) {
+  return name.replace(/^@[^/]+\/yt-dlp-binary-/, "");
+}
+
+async function checkSubPackages(binaryRows) {
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  const optional = pkg.optionalDependencies ?? {};
+  const names = Object.keys(optional).sort();
+
+  /** `binaries/<dir>/<file>` -> sha256, so a staged copy can be compared to the tree it came from. */
+  const treeHashes = new Map(
+    (binaryRows ?? [])
+      .filter((r) => r.rel.startsWith("binaries/"))
+      .map((r) => [r.rel.replace(/\\/g, "/"), r.hash]),
+  );
+
+  // A hard dependency would make install fail outright wherever one platform's package is
+  // unavailable - e.g. a new architecture before its binary is published.
+  record(
+    Object.keys(pkg.dependencies ?? {}).length === 0,
+    "binaries are optionalDependencies, never dependencies",
+    Object.keys(pkg.dependencies ?? {}).length === 0
+      ? "no hard dependencies"
+      : `hard dependencies present: ${Object.keys(pkg.dependencies).join(", ")}`,
+  );
+
+  if (names.length === 0) {
+    record(false, "optionalDependencies declared", "none - binaries would not be installed at all");
+    return;
+  }
+
+  const indexPath = join(SUBPACKAGES_DIR, "index.json");
+  if (!existsSync(indexPath)) {
+    record(false, "binary sub-packages staged", `${indexPath} missing - run \`bun run build:binpkg\``);
+    return;
+  }
+  const index = JSON.parse(readFileSync(indexPath, "utf8"));
+
+  const staged = index.packages.map((p) => p.name).sort();
+  const missing = names.filter((n) => !staged.includes(n));
+  const extra = staged.filter((n) => !names.includes(n));
+  record(
+    missing.length === 0 && extra.length === 0,
+    "optionalDependencies match the staged packages",
+    missing.length || extra.length
+      ? `declared but not staged: [${missing.join(", ")}]; staged but not declared: [${extra.join(", ")}]`
+      : `${names.length} packages`,
+  );
+
+  const skew = names.filter((n) => optional[n] !== pkg.version);
+  record(
+    skew.length === 0,
+    "sub-packages pinned to the wrapper version",
+    skew.length === 0
+      ? `all pinned to ${pkg.version}`
+      : `version skew: ${skew.map((n) => `${n}@${optional[n]} != ${pkg.version}`).join(", ")}`,
+  );
+
+  const rows = [];
+  const payloadHashes = new Map();
+  for (const name of names) {
+    const dir = join(SUBPACKAGES_DIR, stagingDirName(name));
+    const manifestPath = join(dir, "package.json");
+    if (!existsSync(manifestPath)) {
+      record(false, `sub-package ${name}`, "not staged - run `bun run build:binpkg`");
+      continue;
+    }
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+
+    record(
+      manifest.name === name,
+      `sub-package ${name} manifest name`,
+      manifest.name === name ? "ok" : `manifest says ${manifest.name}`,
+    );
+    record(
+      manifest.version === optional[name],
+      `sub-package ${name} version`,
+      manifest.version === optional[name]
+        ? `${manifest.version}`
+        : `manifest ${manifest.version} != pinned ${optional[name]}`,
+    );
+    // A `bin` entry here would put a second `yt-dlp` on the consumer's PATH from a package they
+    // never asked for, able to shadow a system install.
+    record(
+      manifest.bin === undefined,
+      `sub-package ${name} declares no bin`,
+      manifest.bin === undefined ? "ok" : `declares ${JSON.stringify(manifest.bin)} - would shadow PATH`,
+    );
+
+    const declaredFiles = Array.isArray(manifest.files) ? manifest.files : [];
+    const payloadName = declaredFiles[0];
+    if (!payloadName || declaredFiles.length !== 1) {
+      record(
+        false,
+        `sub-package ${name} payload`,
+        `files must name exactly one payload, got ${JSON.stringify(manifest.files)}`,
+      );
+      continue;
+    }
+    const payload = join(dir, payloadName);
+    if (!existsSync(payload)) {
+      record(false, `sub-package ${name} payload`, `${payloadName} missing from ${dir}`);
+      continue;
+    }
+
+    const { kind, arch, detail } = detect(readHead(payload));
+    const size = statSync(payload).size;
+    const runnable = ARCH_TO_NPM_CPU[arch ?? ""] ?? [];
+
+    // The declared platform must describe the binary that is actually inside. This is the check
+    // that stops a mislabelled package from shipping: npm trusts os/cpu, so a wrong value means
+    // installing the wrong architecture or nothing at all.
+    const osOk = Array.isArray(manifest.os) && manifest.os.length > 0;
+    const cpuOk =
+      Array.isArray(manifest.cpu) &&
+      manifest.cpu.length > 0 &&
+      runnable.length > 0 &&
+      manifest.cpu.every((c) => runnable.includes(c)) &&
+      runnable.every((c) => manifest.cpu.includes(c));
+    const mismatch = !osOk || !cpuOk;
+    record(
+      !mismatch,
+      `sub-package ${name} platform matches payload`,
+      mismatch
+        ? `WRONG PLATFORM: os=${JSON.stringify(manifest.os)} cpu=${JSON.stringify(manifest.cpu)} but payload is ${kind} ${arch ?? "?"} (${detail}), runnable by ${JSON.stringify(runnable)}`
+        : `${kind} ${arch} - os=${manifest.os.join(",")} cpu=${manifest.cpu.join(",")}${manifest.libc ? ` libc=${manifest.libc.join(",")}` : ""}`,
+    );
+
+    rows.push({ name, os: manifest.os, cpu: manifest.cpu, libc: manifest.libc ?? null, size, arch, ok: !mismatch });
+
+    const hash = await sha256(payload);
+
+    // The payload must be the same file that is in `binaries/<dir>/`. `stage()` reaches it either by
+    // copying that tree or by downloading straight into the package, so agreement is independent
+    // evidence that the packaging step neither truncated nor substituted it.
+    const treeHash = treeHashes.get(`binaries/${dirFromPackageName(name)}/${payloadName}`);
+    if (treeHash) {
+      record(
+        hash === treeHash,
+        `sub-package ${name} payload matches binaries/${dirFromPackageName(name)}`,
+        hash === treeHash
+          ? `${hash.slice(0, 16)}...`
+          : `staged payload is ${hash.slice(0, 16)}... but binaries/ has ${treeHash.slice(0, 16)}...`,
+      );
+    }
+
+    // One upstream asset copied into two packages would ship the wrong architecture to whichever
+    // platform npm installs it on - the original bug, one level up.
+    const previous = payloadHashes.get(hash);
+    record(
+      previous === undefined,
+      `sub-package ${name} payload is unique`,
+      previous === undefined
+        ? `${hash.slice(0, 16)}...`
+        : `identical sha256 to ${previous}`,
+    );
+    if (previous === undefined) payloadHashes.set(hash, name);
+
+    // npm must actually include the payload. The root .gitignore contains `*.exe`, which is the
+    // exact filename the three Windows packages ship, so this is verified per package rather than
+    // assumed from a single spot-check of the wrapper.
+    if (!process.argv.includes("--no-pack")) {
+      try {
+        const files = packFileList(dir);
+        const present = files.includes(payloadName);
+        record(
+          present,
+          `sub-package ${name} tarball contains its payload`,
+          present ? files.join(", ") : `${payloadName} EXCLUDED from tarball (files: ${files.join(", ")})`,
+        );
+      } catch (error) {
+        record(false, `sub-package ${name} npm pack --dry-run`, String(error.message).split("\n")[0]);
+      }
     }
   }
 
@@ -303,6 +540,29 @@ function report(rows) {
   console.log("  " + "-".repeat(78));
 }
 
+function reportSubPackages(rows) {
+  if (!rows || rows.length === 0) return;
+  const total = rows.reduce((sum, r) => sum + r.size, 0);
+  console.log("\n  binary sub-packages");
+  console.log("  " + "-".repeat(78));
+  console.log("  " + "package".padEnd(46) + "os / cpu".padEnd(20) + "size");
+  console.log("  " + "-".repeat(78));
+  for (const r of rows) {
+    console.log(
+      "  " +
+        r.name.padEnd(46) +
+        `${(r.os ?? []).join(",")} / ${(r.cpu ?? []).join(",")}`.padEnd(20) +
+        (r.size / 1048576).toFixed(2) +
+        "MB",
+    );
+  }
+  console.log("  " + "-".repeat(78));
+  console.log(
+    `  ${rows.length} packages, ${(total / 1048576).toFixed(1)} MB total` +
+      ` (was 214 MB in a single tarball)`,
+  );
+}
+
 async function main() {
   console.log("@involvex/yt-dlp package verification\n");
 
@@ -311,6 +571,8 @@ async function main() {
   }
   const rows = await checkBinaries();
   if (rows.length) report(rows);
+  const subRows = await checkSubPackages(rows);
+  reportSubPackages(subRows);
 
   const passed = results.filter((r) => r.ok).length;
   const total = results.length;

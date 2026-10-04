@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -10,6 +11,7 @@ import {
   isMusl,
   resolveBinary,
   runYtDlp,
+  type ResolvedBinary,
 } from "../src/binary.js";
 
 const ROOT = join(import.meta.dir, "..");
@@ -100,12 +102,15 @@ describe("binary resolution", () => {
     expect(execFileCapture.length).toBe(2);
 
     // Node itself stands in as a controllable payload, so no bundled binary is needed.
-    const slow = {
+    const slow: ResolvedBinary = {
       path: process.execPath,
       source: "bundled",
       needsPython: false,
+      // Annotated rather than `as const`: `as const` makes `searched` a readonly tuple, which is not
+      // assignable to ResolvedBinary's mutable string[]. Benign at runtime, but it means the object
+      // was not actually the type it claims to be.
       searched: [],
-    } as const;
+    };
 
     // And it really does let a slow child run to completion.
     const started = Date.now();
@@ -152,7 +157,11 @@ describe("packaging (regression guards)", () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
     expect(pkg.files).toContain("dist");
     expect(pkg.files).toContain("bin/yt-dlp.js");
-    expect(pkg.files).toContain("binaries");
+    // `binaries/any` rather than `binaries`. The entry has to keep the zipapp in the wrapper -
+    // Android/Termux and unsupported architectures have no sub-package to fall back to - while a
+    // bare "binaries" would drag all ~200 MB of native payloads back in and undo the split.
+    expect(pkg.files).toContain("binaries/any");
+    expect(pkg.files).not.toContain("binaries");
   });
 
   test("package.json permits android installs", () => {
@@ -166,10 +175,41 @@ describe("packaging (regression guards)", () => {
   });
 
   test("the binary builder refuses to resolve 'latest'", () => {
-    const source = readFileSync(
-      join(ROOT, "scripts", "build-binaries.ts"),
-      "utf8",
-    );
-    expect(source).toContain("refusing to build from");
+    // Behavioural, not a source-grep: the refusal used to live in build-binaries.ts and asserting
+    // on that file's text meant the guard silently stopped covering anything the moment the logic
+    // moved. Running the real entrypoint also proves the argument is rejected before any network
+    // access, which a string match cannot show.
+    let stderr = "";
+    let code = 0;
+    try {
+      execFileSync(
+        process.execPath,
+        ["scripts/build-binaries.ts", "--version", "latest"],
+        {
+          cwd: ROOT,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+        },
+      );
+    } catch (error) {
+      const failure = error as { status?: number; stderr?: string };
+      code = failure.status ?? 0;
+      stderr = failure.stderr ?? "";
+    }
+    expect(code).not.toBe(0);
+    expect(stderr).toContain("latest");
+
+    // Same refusal for the packaging script, which shares the version resolver.
+    let packaged = 0;
+    try {
+      execFileSync(
+        process.execPath,
+        ["scripts/build-binary-packages.ts", "--version", "latest"],
+        { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      );
+    } catch (error) {
+      packaged = (error as { status?: number }).status ?? 0;
+    }
+    expect(packaged).not.toBe(0);
   });
 });

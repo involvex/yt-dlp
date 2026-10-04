@@ -11,6 +11,7 @@ on:
       - package.json
       - bun.lock
       - tsconfig.json
+      - tsconfig.check.json
       - .github/workflows/npm.yml
       - bin/**
       - src/**
@@ -22,6 +23,7 @@ on:
       - package.json
       - bun.lock
       - tsconfig.json
+      - tsconfig.check.json
       - .github/workflows/npm.yml
       - bin/**
       - src/**
@@ -61,6 +63,12 @@ jobs:
       # tsc has noEmit disabled and emits into dist/, which the tests and the packaging checks read.
       - name: Build
         run: bun run build:ts
+
+      # tsconfig.json only includes src/ (it has rootDir=./src and emits into dist/), so scripts/ and
+      # test/ are outside it. This second config covers them. A real bug shipped in the first draft of
+      # the binary split because nothing type-checked the build scripts.
+      - name: Typecheck
+        run: bun run typecheck
 
       # The assertions worth having are the ones that check this wrapper's assumptions against a
       # real yt-dlp binary - that platform resolution picks the right file, that the Windows payloads
