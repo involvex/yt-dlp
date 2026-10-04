@@ -6,6 +6,8 @@ on:
       - pyproject.toml
       - .github/workflows/core.yml
       - devscripts/run_tests.py
+      - devscripts/update_requirements.py
+      - bundle/requirements/**
       - test/**
       - yt_dlp/**.py
       - '!yt_dlp/extractor/**.py'
@@ -19,6 +21,8 @@ on:
       - pyproject.toml
       - .github/workflows/core.yml
       - devscripts/run_tests.py
+      - devscripts/update_requirements.py
+      - bundle/requirements/**
       - test/**
       - yt_dlp/**.py
       - '!yt_dlp/extractor/**.py'
