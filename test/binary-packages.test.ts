@@ -196,6 +196,56 @@ describe("binary target table", () => {
   });
 });
 
+describe("verifier / target-table agreement", () => {
+  test("the verifier's directory mapping matches the target table", () => {
+    // `verify-package.mjs` keeps its own dir-suffix -> npm cpu/os mapping rather than importing
+    // the table it validates. That independence is only worth anything if the two agree: if the
+    // verifier imported the table, a wrong entry in the table would validate itself, which is
+    // exactly how the original duplicate-asset bug survived review.
+    //
+    // Read the constants out of the verifier's source so a change to either side fails here rather
+    // than leaving the gate quietly checking the wrong thing.
+    const source = readFileSync(
+      join(ROOT, "scripts", "verify-package.mjs"),
+      "utf8",
+    );
+
+    const cpuBlock = /const DIR_NPM_CPU = \{([\s\S]*?)\n\};/.exec(source)?.[1];
+    const verifierCpu = new Map<string, string[]>();
+    for (const match of cpuBlock?.matchAll(/(\w+):\s*\[([^\]]*)\]/g) ?? []) {
+      verifierCpu.set(
+        match[1],
+        match[2]
+          .split(",")
+          .map((s) => s.trim().replace(/"/g, ""))
+          .filter(Boolean),
+      );
+    }
+    expect(verifierCpu.size).toBeGreaterThan(0);
+
+    for (const target of NATIVE) {
+      const suffix = target.dir.split("-").pop()!;
+      const fromVerifier = verifierCpu.get(suffix);
+      expect(fromVerifier).toBeDefined();
+      // The table's `cpu` holds npm names; the verifier must authorise exactly that set.
+      expect([...fromVerifier!].sort()).toEqual([...target.cpu!].sort());
+    }
+
+    // Same for `os`: windows-* is win32, linux-* is linux, macos-* is darwin.
+    for (const target of NATIVE) {
+      const expectedOs = target.dir.startsWith("windows-")
+        ? "win32"
+        : target.dir.startsWith("linux-")
+          ? "linux"
+          : target.dir.startsWith("macos-")
+            ? "darwin"
+            : null;
+      expect(expectedOs).not.toBeNull();
+      expect(target.os).toContain(expectedOs);
+    }
+  });
+});
+
 describe("resolving a payload from an installed sub-package", () => {
   test("finds the payload in a fake install", () => {
     const target = targetForDir("linux-x64")!;
