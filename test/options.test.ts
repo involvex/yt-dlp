@@ -147,16 +147,19 @@ test("a malformed extraArgs is rejected", () => {
 });
 
 test("the documented option union covers every key in the mapping table", () => {
-  // Keeps the public type and the runtime table from drifting apart. Reads the compiled .d.ts so it
-  // catches the case where someone adds a mapping but forgets to document it, scoped to the
-  // YtDlpOptions block so the other interfaces in the file cannot satisfy the check.
-  const dts = readFileSync(
-    join(import.meta.dir, "..", "dist", "types.d.ts"),
+  // Keeps the public type and the runtime table from drifting apart. Reads src/types.ts rather than
+  // the compiled dist/types.d.ts on purpose: dist/ is a gitignored build artifact, so the .d.ts is
+  // absent on a fresh checkout and *stale* when src/ changed without a rebuild - and a stale .d.ts
+  // fails this test for a reason unrelated to the code under review. The .d.ts is emitted verbatim
+  // from this interface, so the source is the same surface without the footgun. Scoped to the
+  // YtDlpOptions block so this file's other interfaces cannot satisfy the check.
+  const source = readFileSync(
+    join(import.meta.dir, "..", "src", "types.ts"),
     "utf8",
   );
-  const start = dts.indexOf("interface YtDlpOptions");
+  const start = source.indexOf("interface YtDlpOptions");
   expect(start).toBeGreaterThan(-1);
-  const block = dts.slice(start, dts.indexOf("\n}", start));
+  const block = source.slice(start, source.indexOf("\n}", start));
   const documented = new Set(
     [...block.matchAll(/^\s+(\w+)\??:/gm)].map((match) => match[1]),
   );
