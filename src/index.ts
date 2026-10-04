@@ -3,6 +3,8 @@ import {
   getBinaryInfo,
   validateBinary,
   resolveBinary,
+  buildInvocation,
+  execFileCapture,
   runYtDlp,
 } from "./binary.js";
 import { promisify } from "util";
@@ -25,20 +27,19 @@ export class YtDlp {
   }
 
   async init(): Promise<void> {
-    // Resolve the command without requiring the --version probe to succeed: a missing or
-    // mismatched bundled binary must surface when yt-dlp is invoked, not here.
+    // No --version probe here: `this.binaryPath` comes from resolveBinary(), and the bundled
+    // PyInstaller onefile has to extract itself to a temp dir on cold start (~9 s). Probing would
+    // double startup for information nothing uses - runCli skips it for the same reason.
     this.binaryPath = resolveBinary().path;
-    await getBinaryInfo();
   }
 
   /** Run yt-dlp with args passed as an array - never interpolated into a shell string. */
   private async execBinary(
     args: string[],
   ): Promise<{ stdout: string; stderr: string }> {
-    return execFileAsync(this.binaryPath, args, {
-      maxBuffer: 1024 * 1024 * 64,
-      windowsHide: true,
-    });
+    // execFileCapture routes the zipapp payload (Android/Termux, unsupported arch) through a Python
+    // interpreter, so the programmatic API behaves the same as the CLI on those platforms.
+    return execFileCapture(resolveBinary(), args);
   }
 
   async download(

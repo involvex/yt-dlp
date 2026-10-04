@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  buildInvocation,
   getArch,
   getPlatform,
   getTargetKey,
@@ -70,6 +71,18 @@ describe("binary resolution", () => {
     }
   });
 
+  test("zipapp payloads are invoked through an interpreter, never a shell", () => {
+    const resolved = resolveBinary();
+    const { command, args } = buildInvocation(resolved, ["--version"]);
+    if (resolved.needsPython) {
+      // No `/bin/sh` anywhere: Android has none, so a shell-based fallback cannot work there.
+      expect(command).toMatch(/python/i);
+      expect(args[0]).toBe(resolved.path);
+    } else {
+      expect(command).toBe(resolved.path);
+    }
+  });
+
   test("the universal zipapp fallback is never used on Windows", () => {
     if (process.platform !== "win32") return;
     const resolved = resolveBinary();
@@ -78,6 +91,16 @@ describe("binary resolution", () => {
   });
 
   test("runYtDlp propagates the child exit code", async () => {
+    // `binaries/` is gitignored and no CI workflow builds it, so on a fresh clone there is nothing
+    // to run and no yt-dlp on PATH. Skip rather than fail for contributors who have not run
+    // `bun run build:bin`.
+    const resolved = resolveBinary();
+    if (resolved.source === "path") {
+      console.log(
+        "skipping: no bundled binary (run `bun run build:bin` to exercise this)",
+      );
+      return;
+    }
     // The bundled PyInstaller onefile extracts itself to a temp dir on cold start, so the first
     // invocation can take several seconds. Network-free and side-effect-free.
     const code = await runYtDlp(["--version"]);

@@ -17,8 +17,11 @@ import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createReadStream, closeSync, existsSync, openSync, readSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = join(import.meta.dirname, "..");
+// `import.meta.dirname` only exists on Node >= 20.11, but package.json#engines allows >= 18. Use the
+// portable form: this script runs in prepublishOnly, so it must not crash on a supported Node.
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BINARIES_DIR = join(ROOT, "binaries");
 const HEAD_BYTES = 4096;
 
@@ -83,7 +86,11 @@ const SCRIPT_DIRS = new Set(["any", "android-arm64"]);
 const EXPECTED_DUPLICATES = [
   ["binaries/any/yt-dlp", "binaries/android-arm64/yt-dlp"],
 ];
-const EXPECTED_DUPLICATE_PAIRS = EXPECTED_DUPLICATES.map((pair) => [...pair].sort());
+/** Order-insensitive: both sides are sorted before comparison, because `prev` depends on
+ *  readdirSync (filesystem) order and must not decide whether the gate fails. */
+const EXPECTED_DUPLICATE_PAIRS = new Set(
+  EXPECTED_DUPLICATES.map(([a, b]) => [a, b].sort().join(" ")),
+);
 
 function readHead(path) {
   const fd = openSync(path, "r");
@@ -258,10 +265,7 @@ async function checkBinaries() {
 
     const prev = hashes.get(hash);
     if (prev) {
-      const pair = [prev, rel].sort();
-      const intentional = EXPECTED_DUPLICATE_PAIRS.some(
-        (pair) => pair[0] === prev && pair[1] === rel,
-      );
+      const intentional = EXPECTED_DUPLICATE_PAIRS.has([prev, rel].sort().join(" "));
       record(
         intentional,
         `duplicate binary ${rel}`,

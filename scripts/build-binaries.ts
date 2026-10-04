@@ -174,14 +174,20 @@ async function main(): Promise<void> {
   console.log(`Fetching checksums for yt-dlp ${args.version}...`);
   const checksums = await fetchChecksums(args.version);
 
-  // Group destinations by asset so each release asset is downloaded at most once.
-  const wanted = Object.entries(ASSETS).filter(
-    ([asset, dests]) =>
-      args.only.length === 0 ||
-      dests.some((d) => args.only.includes(d.split("/")[1] ?? "")) ||
-      args.only.includes(asset),
+  // Select destinations, not just assets: the `yt-dlp` zipapp maps to two directories, so
+  // filtering at asset granularity alone would make `--only any` also rewrite android-arm64.
+  const selected = Object.entries(ASSETS).flatMap(([asset, dests]) =>
+    dests
+      .filter(
+        (dest) =>
+          args.only.length === 0 ||
+          args.only.includes(dest.split("/")[1] ?? "") ||
+          args.only.includes(asset),
+      )
+      .map((dest) => ({ asset, dest })),
   );
-  if (wanted.length === 0) {
+  const wanted = new Set(selected.map((s) => s.asset));
+  if (selected.length === 0) {
     throw new Error(
       `--only ${args.only.join(",")} matched none of: ${Object.keys(ASSETS).join(", ")}`,
     );
@@ -198,7 +204,7 @@ async function main(): Promise<void> {
 
   const rows: Row[] = [];
 
-  for (const [asset, dests] of wanted) {
+  for (const { asset, dest } of selected) {
     const expected = checksums.get(asset);
     if (!expected) {
       throw new Error(
@@ -207,7 +213,7 @@ async function main(): Promise<void> {
     }
     const url = downloadUrl(args.version, asset);
 
-    for (const dest of dests) {
+    {
       if (existsSync(dest) && !args.force) {
         const actual = await sha256File(dest);
         if (actual === expected) {
