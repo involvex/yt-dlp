@@ -94,6 +94,30 @@ subtitles: true,
 });
 \`\`\`
 
+#### Options
+
+Each option name maps to one specific yt-dlp flag, and an unknown name throws immediately instead of
+being passed along as a guessed flag. For example `outDir` maps to `--paths`:
+
+\`\`\`typescript
+await ytdlp.download(url, { outDir: "/tmp/videos", format: "worst" });
+// yt-dlp receives: --paths /tmp/videos --format worst
+\`\`\`
+
+Two options are deliberately absent, because yt-dlp has no such flag and the previous implementation
+generated a broken one: use `format: "best" | "worst"` rather than `quality`, and pass the URL as the
+first argument rather than as a `url` option.
+
+For any flag this wrapper does not model, use `extraArgs`. These are appended verbatim after the
+mapped options, so they take precedence:
+
+\`\`\`typescript
+await ytdlp.download(url, {
+  format: "worst",
+  extraArgs: ["--format", "bv+ba", "--min-filesize", "50M"],
+});
+\`\`\`
+
 ### `YtDlp.getInfo(url, options)`
 
 Gets information about a video without downloading it.
