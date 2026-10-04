@@ -243,7 +243,10 @@ describe("verifier / target-table agreement", () => {
     for (const target of NATIVE) {
       const fromVerifier = verifierOs(target.dir);
       expect(fromVerifier).not.toBeNull();
-      expect(target.os).toContain(fromVerifier);
+      // Compare the whole set, as the `cpu` half above does and as the gate itself does. Collapsing
+      // to `result[0]` would let a mapping of ["win32", "linux"] satisfy a single-value assertion,
+      // leaving this half no longer checking the mapping it exists to check.
+      expect([...fromVerifier!].sort()).toEqual([...target.os!].sort());
     }
 
     // A directory the verifier does not recognise must yield null rather than a guess, so the gate
@@ -260,14 +263,13 @@ describe("verifier / target-table agreement", () => {
  * paraphrase of it. If the gate is ever restructured this returns undefined and the test fails,
  * which is the outcome we want rather than a silent skip.
  */
-function evaluateOsForDir(body: string): (dir: string) => string | null {
-  const fn = new Function(
-    "dir",
-    `${body.replace(/^\s*return\s+/m, "return ")}`,
-  ) as (dir: string) => string[] | null;
+function evaluateOsForDir(body: string): (dir: string) => string[] | null {
+  const fn = new Function("dir", body.replace(/^\s*return\s+/m, "return ")) as (
+    dir: string,
+  ) => string[] | null;
   return (dir: string) => {
     const result = fn(dir);
-    return Array.isArray(result) ? result[0] : null;
+    return Array.isArray(result) ? result : null;
   };
 }
 
