@@ -44,6 +44,7 @@ import {
 import {
   ensureBinary,
   fetchChecksums,
+  makeExecutable,
   parseCommonArgs,
   reportFailure,
   resolveVersion,
@@ -135,11 +136,25 @@ async function stage(
     (await sha256File(sibling)) === expected
   ) {
     await copyFile(sibling, payload);
+    // `copyFile` preserves the source mode, but the source may itself be a stale non-executable
+    // file, and this payload is what ships. Hash the staged bytes rather than assuming the copy
+    // matched: a copy interrupted by a full disk, or a sibling rewritten concurrently by
+    // `build:bin --force`, would otherwise record a hash that describes a file nobody published.
+    const stagedHash = await sha256File(payload);
+    if (stagedHash !== expected) {
+      await rm(payload, { force: true });
+      throw new Error(
+        `staged copy of ${payload} does not match ${target.asset}\n` +
+          `  expected ${expected}\n  actual   ${stagedHash}\n` +
+          `  the copy was deleted rather than published`,
+      );
+    }
+    await makeExecutable(payload);
     result = {
       asset: target.asset,
       dest: payload,
       status: "cached",
-      sha256: expected,
+      sha256: stagedHash,
       bytes: (await stat(payload)).size,
     };
   } else {

@@ -64,7 +64,7 @@ platform is selected automatically - no configuration needed.
 Each one ships as a separate small package, pulled in automatically:
 
 \`\`\`
-@involvex/yt-dlp                          ~10 KB   the wrapper, and the Python zipapp
+@involvex/yt-dlp                          2.9 MB   the wrapper, plus the Python zipapp
 @involvex/yt-dlp-binary-windows-x64       ~17 MB
 @involvex/yt-dlp-binary-windows-x86       ~13 MB
 @involvex/yt-dlp-binary-windows-arm64     ~20 MB
@@ -74,9 +74,11 @@ Each one ships as a separate small package, pulled in automatically:
 @involvex/yt-dlp-binary-macos-universal2  ~35 MB
 \`\`\`
 
-So a Windows x64 install downloads roughly 17 MB rather than the ~214 MB a single combined tarball
-costs, and packages for platforms you are not on are never fetched at all. Do not install the
-`@involvex/yt-dlp-binary-*` packages directly - the wrapper picks the right one.
+The 2.9 MB wrapper is almost entirely the Python zipapp, which is kept inside it on purpose — it is
+the fallback for platforms no binary package covers (see Android/Termux below). So a Windows x64
+install downloads roughly 17 MB + 2.9 MB rather than the ~214 MB a single combined tarball costs, and
+packages for platforms you are not on are never fetched at all. Do not install the
+`@involvex/yt-dlp-binary-*` packages directly — the wrapper picks the right one.
 
 Resolution falls back rather than failing:
 

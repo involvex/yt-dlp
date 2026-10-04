@@ -45,6 +45,21 @@ export async function sha256File(path: string): Promise<string> {
     .digest("hex");
 }
 
+/**
+ * Ensure a payload is executable.
+ *
+ * Applied on the cached path as well as after a download. A hash match says nothing about the mode:
+ * a run interrupted between write and chmod, a copy out of a build cache, or an exFAT/CIFS mount can
+ * all leave a content-correct `0644` file that then fails with EACCES when `src/binary.ts` spawns it
+ * - and that failure surfaces on the consumer's machine with no error at build time.
+ *
+ * A no-op on Windows, where mode bits are meaningless and `yt-dlp.exe` is executed directly.
+ */
+export async function makeExecutable(path: string): Promise<void> {
+  if (process.platform === "win32") return;
+  await chmod(path, 0o755);
+}
+
 async function fetchToFile(url: string, dest: string): Promise<void> {
   await mkdir(dirname(dest), { recursive: true });
   const response = await fetch(url, { redirect: "follow" });
@@ -115,6 +130,7 @@ export async function ensureBinary(options: {
   if (exists(dest) && !force) {
     const actual = await sha256File(dest);
     if (actual === expected) {
+      await makeExecutable(dest);
       return {
         asset,
         dest,
@@ -136,9 +152,7 @@ export async function ensureBinary(options: {
         `  the download was deleted; refusing to keep an unverified binary`,
     );
   }
-  // The zipapp and the POSIX binaries are executed directly, so they need the executable bit.
-  // A no-op on Windows, where the bit is meaningless.
-  if (process.platform !== "win32") await chmod(dest, 0o755);
+  await makeExecutable(dest);
 
   return {
     asset,
@@ -179,10 +193,26 @@ export function parseCommonArgs(argv: string[]): CommonArgs {
 }
 
 function splitList(args: CommonArgs, raw: string | undefined): void {
-  args.only = (raw ?? "")
+  // A missing or flag-shaped value is an error, never "no filter". `only: []` means *every* target,
+  // and a full run of build-binary-packages deletes the staging tree and re-downloads ~200 MB.
+  // Turning `--only --force` into a destructive rebuild over a typo is the worst possible reading of
+  // a mistyped argument.
+  if (raw === undefined || raw.trim() === "" || raw.startsWith("--")) {
+    throw new Error(
+      `--only requires a comma-separated list of targets (got ${JSON.stringify(raw)}); ` +
+        `omitting it builds every target`,
+    );
+  }
+  const selected = raw
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  if (selected.length === 0) {
+    throw new Error(
+      `--only requires at least one target (got ${JSON.stringify(raw)})`,
+    );
+  }
+  args.only = selected;
 }
 
 export function reportFailure(error: unknown): never {

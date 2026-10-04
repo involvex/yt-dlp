@@ -28,6 +28,7 @@ import {
   subPackageNames,
   targetForDir,
 } from "../src/binary-targets.js";
+import { parseCommonArgs } from "../scripts/binary-download.js";
 
 const ROOT = join(import.meta.dir, "..");
 
@@ -264,6 +265,23 @@ describe("wrapper manifest wiring", () => {
       expect(range).toBe(pkg.version);
       expect(name.startsWith(BINARY_PACKAGE_PREFIX)).toBe(true);
     }
+  });
+
+  test("--only with a missing or flag-shaped value is rejected, not treated as 'all'", () => {
+    // `only: []` means "every target", and a full run deletes the staging tree and re-downloads
+    // ~200 MB. A typo must not be able to trigger that.
+    for (const argv of [
+      ["--only"],
+      ["--only", "--force"],
+      ["--only="],
+      ["--only", ""],
+    ]) {
+      expect(() => parseCommonArgs(argv)).toThrow(/--only/);
+    }
+    // A real list still parses.
+    expect(
+      parseCommonArgs(["--only", "linux-x64,macos-universal2"]).only,
+    ).toEqual(["linux-x64", "macos-universal2"]);
   });
 
   test("there are no hard dependencies", () => {

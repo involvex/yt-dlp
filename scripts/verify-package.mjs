@@ -97,6 +97,56 @@ const ARCH_TO_NPM_CPU = {
 };
 
 /**
+ * Detected binary format -> the npm `os` value that can run it.
+ *
+ * The counterpart to ARCH_TO_NPM_CPU. npm trusts `os` exactly as much as it trusts `cpu`, so a
+ * package declaring `os: ["win32"]` around a Linux ELF would otherwise ship: `cpu` would be
+ * checked against the header, but `os` had no independent signal to check against, and a package
+ * whose platform is simply wrong installs nowhere at all.
+ *
+ * A shebang script maps to no `os` - the zipapp stays in the wrapper and is never a sub-package.
+ */
+const KIND_TO_NPM_OS = {
+  elf: ["linux"],
+  pe: ["win32"],
+  "mach-o": ["darwin"],
+};
+
+/**
+ * Directory suffix -> the npm `cpu` values it authorises.
+ *
+ * The counterpart to KIND_TO_NPM_CPU, and the authority the manifest is checked against.
+ *
+ * Checking the manifest against the payload alone is not enough: a package named
+ * `...windows-x64` holding a Linux x64 ELF with `os: ["linux"], cpu: ["x64"]` is internally
+ * consistent, passes every payload-derived check, and is still wrong - it installs on Linux and
+ * never on Windows, which is precisely the platform its name promises. The directory suffix is what
+ * the resolver and the runtime agree on, so it is what the manifest must match.
+ *
+ * `universal2` is the one suffix that legitimately spans two architectures.
+ */
+const DIR_NPM_CPU = {
+  x64: ["x64"],
+  x86: ["ia32"],
+  ia32: ["ia32"],
+  arm64: ["arm64"],
+  arm: ["arm"],
+  universal2: ["x64", "arm64"],
+};
+
+/**
+ * Directory prefix -> the npm `os` values it authorises.
+ *
+ * Derived the same way as DIR_NPM_CPU. `linux-musl-x64` is `linux`, `macos-universal2` is `darwin`.
+ */
+function expectedOsForDir(dir) {
+  if (dir.startsWith("windows-")) return ["win32"];
+  if (dir.startsWith("linux-")) return ["linux"];
+  if (dir.startsWith("macos-")) return ["darwin"];
+  return null;
+}
+
+/**
  * Directories that hold a `python3` zipapp rather than a native binary.
  *
  * Only `any` remains: it is the arch-independent universal fallback that ships in the main package.
@@ -447,43 +497,79 @@ async function checkSubPackages(binaryRows) {
     const { kind, arch, detail } = detect(readHead(payload));
     const size = statSync(payload).size;
     const runnable = ARCH_TO_NPM_CPU[arch ?? ""] ?? [];
+    const runnableOs = KIND_TO_NPM_OS[kind] ?? [];
 
     // The declared platform must describe the binary that is actually inside. This is the check
     // that stops a mislabelled package from shipping: npm trusts os/cpu, so a wrong value means
-    // installing the wrong architecture or nothing at all.
-    const osOk = Array.isArray(manifest.os) && manifest.os.length > 0;
+    // installing the wrong architecture or nothing at all. Both fields are checked against the
+    // header - `os` against the format, `cpu` against the machine type - because a wrong `os` makes
+    // the package install nowhere at all, which is harder to diagnose than a wrong `cpu`.
+    const declaredOs = Array.isArray(manifest.os) ? manifest.os : [];
+    const declaredCpu = Array.isArray(manifest.cpu) ? manifest.cpu : [];
+    const osOk =
+      runnableOs.length > 0 &&
+      declaredOs.length > 0 &&
+      declaredOs.every((o) => runnableOs.includes(o)) &&
+      runnableOs.every((o) => declaredOs.includes(o));
     const cpuOk =
-      Array.isArray(manifest.cpu) &&
-      manifest.cpu.length > 0 &&
       runnable.length > 0 &&
-      manifest.cpu.every((c) => runnable.includes(c)) &&
-      runnable.every((c) => manifest.cpu.includes(c));
+      declaredCpu.length > 0 &&
+      declaredCpu.every((c) => runnable.includes(c)) &&
+      runnable.every((c) => declaredCpu.includes(c));
     const mismatch = !osOk || !cpuOk;
     record(
       !mismatch,
       `sub-package ${name} platform matches payload`,
       mismatch
-        ? `WRONG PLATFORM: os=${JSON.stringify(manifest.os)} cpu=${JSON.stringify(manifest.cpu)} but payload is ${kind} ${arch ?? "?"} (${detail}), runnable by ${JSON.stringify(runnable)}`
-        : `${kind} ${arch} - os=${manifest.os.join(",")} cpu=${manifest.cpu.join(",")}${manifest.libc ? ` libc=${manifest.libc.join(",")}` : ""}`,
+        ? `WRONG PLATFORM: os=${JSON.stringify(declaredOs)} cpu=${JSON.stringify(declaredCpu)} but payload is ${kind} ${arch ?? "?"} (${detail}); expected os=${JSON.stringify(runnableOs)} cpu=${JSON.stringify(runnable)}`
+        : `${kind} ${arch} - os=${declaredOs.join(",")} cpu=${declaredCpu.join(",")}${manifest.libc ? ` libc=${manifest.libc.join(",")}` : ""}`,
     );
 
-    rows.push({ name, os: manifest.os, cpu: manifest.cpu, libc: manifest.libc ?? null, size, arch, ok: !mismatch });
+    // The package's own name is a third, independent claim about what it should contain. It must agree
+    // with both the payload and the directory the payload was expected in. Without this, a Linux
+    // x64 payload staged as `...windows-x64` with `os: ["linux"], cpu: ["x64"]` is internally
+    // consistent and passes every payload-derived check, yet installs on Linux and never on Windows.
+    const dirName = dirFromPackageName(name);
+    const wantedCpu = DIR_NPM_CPU[dirName.split("-").pop()] ?? null;
+    const wantedOs = expectedOsForDir(dirName);
+    const nameMismatch =
+      wantedCpu === null ||
+      wantedOs === null ||
+      !wantedCpu.every((c) => declaredCpu.includes(c)) ||
+      !declaredCpu.every((c) => wantedCpu.includes(c)) ||
+      !wantedOs.every((o) => declaredOs.includes(o)) ||
+      !declaredOs.every((o) => wantedOs.includes(o));
+    record(
+      !nameMismatch,
+      `sub-package ${name} platform matches its own name`,
+      nameMismatch
+        ? `named for "${dirName}" but declares os=${JSON.stringify(declaredOs)} cpu=${JSON.stringify(declaredCpu)}; the name promises os=${JSON.stringify(wantedOs)} cpu=${JSON.stringify(wantedCpu)}`
+        : `${dirName} -> os=${declaredOs.join(",")} cpu=${declaredCpu.join(",")}`,
+    );
+
+    rows.push({ name, os: declaredOs, cpu: declaredCpu, libc: manifest.libc ?? null, size, arch, ok: !mismatch });
 
     const hash = await sha256(payload);
 
-    // The payload must be the same file that is in `binaries/<dir>/`. `stage()` reaches it either by
-    // copying that tree or by downloading straight into the package, so agreement is independent
-    // evidence that the packaging step neither truncated nor substituted it.
-    const treeHash = treeHashes.get(`binaries/${dirFromPackageName(name)}/${payloadName}`);
-    if (treeHash) {
-      record(
-        hash === treeHash,
-        `sub-package ${name} payload matches binaries/${dirFromPackageName(name)}`,
-        hash === treeHash
+    // The payload must be the same file that is in `binaries/<dir>/`, under the name the runtime
+    // looks up. `stage()` reaches it either by copying that tree or by downloading straight into the
+    // package, so agreement is independent evidence that the packaging step neither truncated nor
+    // substituted it.
+    //
+    // A missing entry here is itself a failure rather than a skip: the staged package cannot be
+    // compared, and `resolveSubPackageBinary` looks the payload up by the exact name recorded in the
+    // target table. If the two disagree the package installs and then silently fails to resolve,
+    // degrading to the zipapp or PATH with no diagnostic anywhere.
+    const treeHash = treeHashes.get(`binaries/${dirName}/${payloadName}`);
+    record(
+      treeHash !== undefined && hash === treeHash,
+      `sub-package ${name} payload matches binaries/${dirName}/${payloadName}`,
+      treeHash === undefined
+        ? `nothing to compare against: binaries/${dirName}/${payloadName} was not found in the binaries/ tree, so the runtime would not be able to resolve this payload by name`
+        : hash === treeHash
           ? `${hash.slice(0, 16)}...`
           : `staged payload is ${hash.slice(0, 16)}... but binaries/ has ${treeHash.slice(0, 16)}...`,
-      );
-    }
+    );
 
     // One upstream asset copied into two packages would ship the wrong architecture to whichever
     // platform npm installs it on - the original bug, one level up.

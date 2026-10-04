@@ -156,7 +156,6 @@ export function buildInvocation(
   return { command: resolved.path, args };
 }
 
-/** Relative paths that hold the python3 zipapp rather than a native executable. */
 /** Resolver anchored at the installed package, so sub-package lookups walk the real node_modules. */
 const requireFromPackage = createRequire(join(__dirname, "..", "noop.cjs"));
 
