@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   buildInvocation,
+  execFileCapture,
   getArch,
   getPlatform,
   getTargetKey,
@@ -89,6 +90,28 @@ describe("binary resolution", () => {
     expect(resolved.source).not.toBe("universal");
     expect(resolved.path).not.toContain("any");
   });
+
+  test("the download execution path cannot acquire a deadline", async () => {
+    // Regression guard. execFileCapture is what the programmatic API's download()/getInfo() run on,
+    // and those legitimately run for hours, so it must impose no timeout. A behavioural test cannot
+    // prove that cheaply - any cap large enough to matter (the bug was 30 s) outlasts the test - so
+    // assert the structure instead: the function takes exactly (resolved, args), leaving nowhere to
+    // put a default deadline without the signature visibly changing.
+    expect(execFileCapture.length).toBe(2);
+
+    // Node itself stands in as a controllable payload, so no bundled binary is needed.
+    const slow = {
+      path: process.execPath,
+      source: "bundled",
+      needsPython: false,
+      searched: [],
+    } as const;
+
+    // And it really does let a slow child run to completion.
+    const started = Date.now();
+    await execFileCapture(slow, ["-e", `setTimeout(()=>{}, ${2_000})`]);
+    expect(Date.now() - started).toBeGreaterThan(1_500);
+  }, 30_000);
 
   test("runYtDlp propagates the child exit code", async () => {
     // `binaries/` is gitignored and no CI workflow builds it, so on a fresh clone there is nothing

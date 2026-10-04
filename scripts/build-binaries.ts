@@ -186,7 +186,6 @@ async function main(): Promise<void> {
       )
       .map((dest) => ({ asset, dest })),
   );
-  const wanted = new Set(selected.map((s) => s.asset));
   if (selected.length === 0) {
     throw new Error(
       `--only ${args.only.join(",")} matched none of: ${Object.keys(ASSETS).join(", ")}`,
@@ -213,42 +212,40 @@ async function main(): Promise<void> {
     }
     const url = downloadUrl(args.version, asset);
 
-    {
-      if (existsSync(dest) && !args.force) {
-        const actual = await sha256File(dest);
-        if (actual === expected) {
-          rows.push({
-            dest,
-            asset,
-            status: "ok (cached)",
-            sha256: actual,
-            bytes: (await stat(dest)).size,
-          });
-          console.log(`  ok       ${dest}`);
-          continue;
-        }
-        console.log(`  stale    ${dest} (hash mismatch, re-downloading)`);
-      }
-
-      console.log(`  get      ${url}`);
-      await fetchToFile(url, dest);
+    if (existsSync(dest) && !args.force) {
       const actual = await sha256File(dest);
-      if (actual !== expected) {
-        await rm(dest, { force: true });
-        throw new Error(
-          `checksum mismatch for ${dest}\n  expected ${expected}\n  actual   ${actual}\n` +
-            `  the download was deleted; refusing to keep an unverified binary`,
-        );
+      if (actual === expected) {
+        rows.push({
+          dest,
+          asset,
+          status: "ok (cached)",
+          sha256: actual,
+          bytes: (await stat(dest)).size,
+        });
+        console.log(`  ok       ${dest}`);
+        continue;
       }
-      if (process.platform !== "win32") await chmod(dest, 0o755);
-      rows.push({
-        dest,
-        asset,
-        status: "downloaded",
-        sha256: actual,
-        bytes: (await stat(dest)).size,
-      });
+      console.log(`  stale    ${dest} (hash mismatch, re-downloading)`);
     }
+
+    console.log(`  get      ${url}`);
+    await fetchToFile(url, dest);
+    const actual = await sha256File(dest);
+    if (actual !== expected) {
+      await rm(dest, { force: true });
+      throw new Error(
+        `checksum mismatch for ${dest}\n  expected ${expected}\n  actual   ${actual}\n` +
+          `  the download was deleted; refusing to keep an unverified binary`,
+      );
+    }
+    if (process.platform !== "win32") await chmod(dest, 0o755);
+    rows.push({
+      dest,
+      asset,
+      status: "downloaded",
+      sha256: actual,
+      bytes: (await stat(dest)).size,
+    });
   }
 
   console.log(

@@ -222,31 +222,47 @@ function missingBinaryMessage(resolved: ResolvedBinary): string {
   );
 }
 
+/** Shared exec options. `timeout` is omitted unless a caller sets one - see below. */
+const CAPTURE_OPTIONS = {
+  maxBuffer: 1024 * 1024 * 64,
+  windowsHide: true,
+} as const;
+
+/** Run one command and capture its output, with an optional deadline. */
+function capture(command: string, args: string[], timeout?: number) {
+  return execFileAsync(
+    command,
+    args,
+    timeout ? { ...CAPTURE_OPTIONS, timeout } : CAPTURE_OPTIONS,
+  );
+}
+
+/** Deadline for the `--version` probe: if it has not answered by now the binary is not usable. */
+const PROBE_TIMEOUT_MS = 30_000;
+
 /**
- * Run the resolved payload and return its stdout, trying each Python interpreter candidate for the
- * zipapp payload so a system that only exposes `python` (or only `python3`) still works.
+ * Run the resolved payload and return its stdout/stderr, trying each Python interpreter candidate for
+ * the zipapp payload so a system that only exposes `python` (or only `python3`) still works.
  * Rejects if no candidate succeeds.
+ *
+ * Deliberately takes no timeout parameter and imposes no deadline. This is the execution path for the
+ * programmatic API's `download()`/`getInfo()`, which legitimately run for hours, so any default cap
+ * here would SIGTERM long downloads and report them as failures. A probe that does need a deadline
+ * uses `probeVersion` instead - keeping the two separate means the download path cannot acquire a cap
+ * by accident.
  */
 export async function execFileCapture(
   resolved: ResolvedBinary,
   args: string[],
 ): Promise<{ stdout: string; stderr: string }> {
   if (!resolved.needsPython) {
-    return execFileAsync(resolved.path, args, {
-      maxBuffer: 1024 * 1024 * 64,
-      timeout: 30_000,
-      windowsHide: true,
-    });
+    return capture(resolved.path, args);
   }
 
   let lastError: unknown;
   for (const python of pythonCandidates()) {
     try {
-      return await execFileAsync(python, [resolved.path, ...args], {
-        maxBuffer: 1024 * 1024 * 64,
-        timeout: 30_000,
-        windowsHide: true,
-      });
+      return await capture(python, [resolved.path, ...args]);
     } catch (error) {
       lastError = error;
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -258,6 +274,16 @@ export async function execFileCapture(
       `no Python interpreter found (tried ${pythonCandidates().join(", ")})`,
     )
   );
+}
+
+/** Run `args` against the resolved payload with a deadline, for short-lived probes only. */
+async function probeVersion(
+  resolved: ResolvedBinary,
+  args: string[],
+): Promise<{ stdout: string; stderr: string }> {
+  const command = resolved.needsPython ? pythonCandidates()[0] : resolved.path;
+  const argv = resolved.needsPython ? [resolved.path, ...args] : args;
+  return capture(command, argv, PROBE_TIMEOUT_MS);
 }
 
 /**
@@ -274,7 +300,8 @@ export async function getBinaryInfo(): Promise<BinaryInfo> {
   };
 
   try {
-    const { stdout } = await execFileCapture(resolved, ["--version"]);
+    // Bounded: a slow --version means the binary is not usable, so report "unknown" rather than block.
+    const { stdout } = await probeVersion(resolved, ["--version"]);
     const version = stdout.trim().split(/\r?\n/).pop() ?? "";
     if (version) info.version = version;
   } catch {
@@ -394,16 +421,15 @@ function reportSpawnFailure(
   console.error(detail);
 }
 
-/** Small helper so the command/args pair can be spread into spawnOnce. */
-function invoke(resolved: ResolvedBinary, args: string[]): [string, string[]] {
-  const { command, args: all } = buildInvocation(resolved, args);
-  return [command, all];
-}
-
 /**
- * Backwards-compatible spawn API. Prefer `runYtDlp`, which awaits the exit code and routes zipapp
- * payloads through the interpreter; this variant is kept for callers that want the ChildProcess
- * handle.
+ * Backwards-compatible spawn API, kept for callers that want the ChildProcess handle.
+ *
+ * Prefer `runYtDlp`. Two differences matter: `runYtDlp` awaits the exit code and maps a signal death
+ * to `128 + signal`, and it retries the remaining interpreter candidates when one is not installed.
+ * This variant can only start a process, so for the zipapp payload it commits to the first candidate
+ * from `pythonCandidates()` with no way to fall back - set `YT_DLP_PYTHON` if you need a specific
+ * interpreter. In practice only Termux and unsupported-architecture systems take that path, where
+ * `python3` is the conventional name.
  */
 export function spawnYtDlp(args: string[] = []): ReturnType<typeof spawn> {
   const { command, args: all } = buildInvocation(resolveBinary(), args);

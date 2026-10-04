@@ -3,12 +3,9 @@ import {
   getBinaryInfo,
   validateBinary,
   resolveBinary,
-  buildInvocation,
   execFileCapture,
   runYtDlp,
 } from "./binary.js";
-import { promisify } from "util";
-import { execFile } from "child_process";
 import {
   YtDlpOptions,
   DownloadResult,
@@ -16,8 +13,6 @@ import {
   Format,
   ExecResult,
 } from "./types.js";
-
-const execFileAsync = promisify(execFile);
 
 export class YtDlp {
   private binaryPath: string;
