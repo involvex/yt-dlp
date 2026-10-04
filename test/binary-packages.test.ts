@@ -231,20 +231,45 @@ describe("verifier / target-table agreement", () => {
       expect([...fromVerifier!].sort()).toEqual([...target.cpu!].sort());
     }
 
-    // Same for `os`: windows-* is win32, linux-* is linux, macos-* is darwin.
+    // Same for `os`, read from the verifier's own `expectedOsForDir` rather than from prefixes
+    // re-stated here. Re-deriving the rule in the test would leave this half self-referential: the
+    // test would agree with itself and never notice the gate's mapping drifting.
+    const osBody = /function expectedOsForDir\(dir\) \{([\s\S]*?)\n\}/.exec(
+      source,
+    )?.[1];
+    expect(osBody).toBeDefined();
+    const verifierOs = evaluateOsForDir(osBody!);
+
     for (const target of NATIVE) {
-      const expectedOs = target.dir.startsWith("windows-")
-        ? "win32"
-        : target.dir.startsWith("linux-")
-          ? "linux"
-          : target.dir.startsWith("macos-")
-            ? "darwin"
-            : null;
-      expect(expectedOs).not.toBeNull();
-      expect(target.os).toContain(expectedOs);
+      const fromVerifier = verifierOs(target.dir);
+      expect(fromVerifier).not.toBeNull();
+      expect(target.os).toContain(fromVerifier);
     }
+
+    // A directory the verifier does not recognise must yield null rather than a guess, so the gate
+    // records a failure instead of validating a package against an assumed platform.
+    expect(verifierOs("plan9-x64")).toBeNull();
   });
 });
+
+/**
+ * Run `expectedOsForDir` out of the verifier's source.
+ *
+ * The function is a pure prefix test with no closure over module scope, so reconstructing it from
+ * its body is safe and keeps the test honest: the rule being checked is the gate's rule, not a
+ * paraphrase of it. If the gate is ever restructured this returns undefined and the test fails,
+ * which is the outcome we want rather than a silent skip.
+ */
+function evaluateOsForDir(body: string): (dir: string) => string | null {
+  const fn = new Function(
+    "dir",
+    `${body.replace(/^\s*return\s+/m, "return ")}`,
+  ) as (dir: string) => string[] | null;
+  return (dir: string) => {
+    const result = fn(dir);
+    return Array.isArray(result) ? result[0] : null;
+  };
+}
 
 describe("resolving a payload from an installed sub-package", () => {
   test("finds the payload in a fake install", () => {
