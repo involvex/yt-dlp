@@ -13,6 +13,7 @@ import {
   Format,
   ExecResult,
 } from "./types.js";
+import { buildOptionArgs } from "./options.js";
 
 export class YtDlp {
   private binaryPath: string;
@@ -60,7 +61,7 @@ export class YtDlp {
   }
 
   async getInfo(url: string, options: YtDlpOptions = {}): Promise<VideoInfo> {
-    const args = ["--dump-json", url, ...this.buildOptions(options)];
+    const args = ["--dump-json", url, ...buildOptionArgs(options)];
 
     try {
       const { stdout } = await this.execBinary(args);
@@ -97,26 +98,7 @@ export class YtDlp {
   }
 
   private buildArgs(url: string, options: YtDlpOptions): string[] {
-    const args = [url, ...this.buildOptions(options)];
-    return args;
-  }
-
-  private buildOptions(options: YtDlpOptions): string[] {
-    const args: string[] = [];
-
-    for (const [key, value] of Object.entries(options)) {
-      if (value === undefined || value === null) continue;
-
-      const flag = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
-
-      if (typeof value === "boolean") {
-        if (value) args.push(flag);
-      } else {
-        args.push(flag, String(value));
-      }
-    }
-
-    return args;
+    return [url, ...buildOptionArgs(options)];
   }
 }
 
