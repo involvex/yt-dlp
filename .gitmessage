@@ -1,0 +1,32 @@
+# Commit message template for the @involvex/yt-dlp fork.
+#
+# This repo carries two histories, so match the style to what you changed:
+#   - yt_dlp/, devscripts/, .github/, test/  ->  upstream yt-dlp style: [ie/site] Description (#PR)
+#   - src/, scripts/, package.json, *.test.ts  ->  Conventional Commits: fix(npm): Description
+#
+# Lines starting with # are comments and are stripped by git.
+# Lines left blank are kept. Delete the guidance that does not apply.
+
+# ---------------------------------------------------------------- wrapper-only
+# type(scope): imperative summary under ~72 chars
+#
+# Explain the root cause, not just the diff. Note breaking changes with a
+# "BREAKING CHANGE:" footer. See CONTRIBUTING.md#commit-message-conventions.
+#
+# fix(npm): ship dist/ in tarball and correct bundled binary resolution
+
+# ------------------------------------------------------------------- upstream
+# [scope] Capitalised imperative description (#PR)
+#
+# [ie/<site>] Short description of the extractor change (#12345)
+# [utils] `function_name`: Describe the behavioural change (#12345)
+# [build] Bump <dependency> to <version> (#12345)
+# [cleanup] Misc cleanup
+
+# ------------------------------------------------------------------- releases
+# Release <YYYY.MM.DD>
+# v<YYYY.MM.DD[.rev]>
+
+# ------------------------------------------------------------------- trailers
+# Closes #<issue>
+# Co-authored-by: Name <email>
