@@ -1,0 +1,83 @@
+name: Node Wrapper Tests
+
+# The npm wrapper is a fork addition and has no Python to test, so nothing here is covered by
+# core.yml. Without this workflow `bun test` was defined in package.json but never executed by CI,
+# which is how a camelCase-to-flag mapping bug and an unpinned dependency both survived review.
+
+on:
+  push:
+    branches: ['master', 'integrate-upstream']
+    paths:
+      - package.json
+      - bun.lock
+      - tsconfig.json
+      - .github/workflows/npm.yml
+      - bin/**
+      - src/**
+      - scripts/**
+      - 'test/**/*.test.ts'
+  pull_request:
+    branches: ['**']
+    paths:
+      - package.json
+      - bun.lock
+      - tsconfig.json
+      - .github/workflows/npm.yml
+      - bin/**
+      - src/**
+      - scripts/**
+      - 'test/**/*.test.ts'
+
+permissions: {}
+
+concurrency:
+  group: npm-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  tests:
+    name: Node wrapper tests
+    if: ${{ !contains(github.event.head_commit.message, ':ci skip') }}
+    permissions:
+      contents: read
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2.2.0
+        with:
+          bun-version: '1.2.11'  # minimum supported version
+          no-cache: true
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # tsc has noEmit disabled and emits into dist/, which the tests and the packaging checks read.
+      - name: Build
+        run: bun run build:ts
+
+      # The assertions worth having are the ones that check this wrapper's assumptions against a
+      # real yt-dlp binary - that platform resolution picks the right file, that the Windows payloads
+      # are the architecture they claim to be, and that the packaging guards hold. Those assertions
+      # are skipped when binaries/ is absent, so fetch this runner's binary rather than letting them
+      # silently no-op. --only keeps this to one download instead of the full ~214 MB matrix.
+      - name: Fetch bundled binary (Linux)
+        if: runner.os == 'Linux'
+        run: bun scripts/build-binaries.ts --only linux-x64
+
+      - name: Fetch bundled binary (Windows)
+        if: runner.os == 'Windows'
+        run: bun scripts/build-binaries.ts --only windows-x64
+
+      - name: Test
+        run: bun test
+
+      # scripts/verify-package.mjs is deliberately not run here: it validates the publish tarball and
+      # expects the full binary set, so it stays wired to prepublishOnly rather than costing every PR
+      # a 214 MB download.
