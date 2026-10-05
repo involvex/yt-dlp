@@ -83,7 +83,8 @@
     "prepublishOnly": "bun run build && bun run build:binpkg && node scripts/verify-package.mjs",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.check.json",
-    "verify": "node scripts/verify-package.mjs"
+    "verify": "node scripts/verify-package.mjs",
+    "release": "bun scripts/publish.ts"
   },
   "type": "module",
   "types": "./dist/index.d.ts",
