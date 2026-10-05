@@ -1,37 +1,37 @@
 import { spawn } from "child_process";
 import { execFile } from "child_process";
+import { createRequire } from "module";
 import { promisify } from "util";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { existsSync } from "fs";
 import { BinaryInfo } from "./types.js";
+import {
+  TARGET_KEY_DIRS,
+  UNIVERSAL_DIR,
+  packageNameFor,
+  targetForDir,
+} from "./binary-targets.js";
 
 const execFileAsync = promisify(execFile);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Where the bundled yt-dlp for a given platform/arch lives, relative to the package root.
+ * Where the native payload for this platform lives, and how to build its argv.
  *
- * The first entry that exists on disk wins. `any` is the arch-independent python3 zipapp and acts
- * as a last-resort bundled fallback; a bare `yt-dlp` on PATH is the final fallback.
+ * Resolution order, highest priority first:
  *
- * `macos-universal2` is a single Mach-O fat binary that runs on both macOS architectures, so both
- * macOS entries point at the same file rather than shipping it twice.
+ *   1. a sibling `binaries/<dir>/` - a local `bun run build:bin` tree, which is what makes
+ *      development and the test suite work with no install step;
+ *   2. the installed `@involvex/yt-dlp-binary-<dir>` optional dependency - the normal path for an
+ *      installed consumer, since only `binaries/any` is published in the main package;
+ *   3. the arch-independent python3 zipapp in the main package (POSIX only);
+ *   4. a bare `yt-dlp` on PATH.
+ *
+ * Steps 1 and 2 hold the same file, so a missing or skipped sub-package degrades to the zipapp and
+ * then to PATH rather than failing the install. Every step is a fallback, never an error.
  */
-const CANDIDATES: Record<string, string[]> = {
-  "windows-x64": ["binaries/windows-x64/yt-dlp.exe"],
-  "windows-x86": ["binaries/windows-x86/yt-dlp.exe"],
-  "windows-arm64": ["binaries/windows-arm64/yt-dlp.exe"],
-  "linux-x64": ["binaries/linux-x64/yt-dlp"],
-  "linux-arm64": ["binaries/linux-arm64/yt-dlp"],
-  // Alpine / other musl-based distributions have no glibc and cannot run yt-dlp_linux.
-  "linux-musl-x64": ["binaries/linux-musl-x64/yt-dlp"],
-  "macos-x64": ["binaries/macos-universal2/yt-dlp"],
-  "macos-arm64": ["binaries/macos-universal2/yt-dlp"],
-  // No upstream Bionic build exists; the python3 zipapp is the only viable Android payload.
-  "android-arm64": ["binaries/android-arm64/yt-dlp"],
-};
 
 /**
  * Arch-independent python3 zipapp, checked when no native binary matches.
@@ -39,14 +39,17 @@ const CANDIDATES: Record<string, string[]> = {
  * POSIX only. It is a `#!/usr/bin/env python3` script, and Windows cannot execute a shebang file
  * at all, so on win32 this must be skipped - otherwise it would shadow the PATH fallback and break
  * installs that rely on a system yt-dlp.
+ *
+ * This is also what serves Android/Termux: upstream publishes no Bionic build, so there is
+ * deliberately no `android-arm64` entry in TARGET_KEY_DIRS and Termux falls through to here.
  */
-const UNIVERSAL_FALLBACK = "binaries/any/yt-dlp";
+const UNIVERSAL_TARGET = targetForDir(UNIVERSAL_DIR);
+if (!UNIVERSAL_TARGET)
+  throw new Error(`target table is missing the "${UNIVERSAL_DIR}" target`);
+const UNIVERSAL_FALLBACK = `binaries/${UNIVERSAL_DIR}/${UNIVERSAL_TARGET.filename}`;
 
 /** Last resort: resolve `yt-dlp` from PATH. */
 const PATH_FALLBACK = "yt-dlp";
-
-/** Platforms whose bundled payload is the python3 zipapp and therefore needs python3. */
-const NEEDS_PYTHON = new Set(["android-arm64", "any"]);
 
 export class UnsupportedPlatformError extends Error {
   constructor(
@@ -153,33 +156,91 @@ export function buildInvocation(
   return { command: resolved.path, args };
 }
 
-/** Relative paths that hold the python3 zipapp rather than a native executable. */
-const SCRIPT_PAYLOADS = new Set([
-  UNIVERSAL_FALLBACK,
-  "binaries/android-arm64/yt-dlp",
-]);
+/** Resolver anchored at the installed package, so sub-package lookups walk the real node_modules. */
+const requireFromPackage = createRequire(join(__dirname, "..", "noop.cjs"));
 
 /**
- * Resolve the yt-dlp to run: bundled native binary -> universal zipapp -> PATH.
- * Throws only when nothing at all could be resolved.
+ * Locate a native payload inside its installed `@involvex/yt-dlp-binary-<dir>` optional dependency.
+ *
+ * `base` exists so the test suite can point resolution at a temporary node_modules tree instead of
+ * needing a real install.
+ */
+export function resolveSubPackageBinary(
+  dir: string,
+  base?: string,
+): string | null {
+  const target = targetForDir(dir);
+  if (!target || target.script) return null;
+  const pkg = packageNameFor(dir);
+  if (!pkg) return null;
+
+  const require = base
+    ? createRequire(join(base, "noop.cjs"))
+    : requireFromPackage;
+
+  let packageDir: string;
+  try {
+    // Resolve the manifest, not the payload: a sub-package declares no `exports` map, but resolving
+    // `package.json` is immune to one being added later, whereas a payload subpath would then start
+    // throwing ERR_PACKAGE_PATH_NOT_EXPORTED and silently fall through to PATH.
+    packageDir = dirname(require.resolve(`${pkg}/package.json`));
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    // Not installed for this platform is the expected case, not an error. Anything else - a
+    // malformed manifest, a permissions problem - is a real fault and must not be swallowed.
+    if (
+      code === "MODULE_NOT_FOUND" ||
+      code === "ERR_MODULE_NOT_FOUND" ||
+      code === "ERR_PACKAGE_PATH_NOT_EXPORTED"
+    ) {
+      return null;
+    }
+    throw error;
+  }
+
+  const payload = join(packageDir, target.filename);
+  return existsSync(payload) ? payload : null;
+}
+
+/**
+ * Resolve the yt-dlp to run: bundled native binary (sibling tree, then sub-package) -> universal
+ * zipapp -> PATH. Never throws for a missing payload, because every step has a fallback.
  */
 export function resolveBinary(): ResolvedBinary {
   const key = getTargetKey();
   const searched: string[] = [];
 
-  for (const relativePath of CANDIDATES[key] ?? []) {
+  const dir = TARGET_KEY_DIRS[key];
+  const target = dir ? targetForDir(dir) : undefined;
+  if (dir && target) {
+    // 1. Sibling tree from a local `bun run build:bin`.
+    const relativePath = `binaries/${dir}/${target.filename}`;
     searched.push(relativePath);
-    const absolute = join(__dirname, "..", relativePath);
-    if (existsSync(absolute))
+    const sibling = join(__dirname, "..", relativePath);
+    if (existsSync(sibling)) {
       return {
-        path: absolute,
+        path: sibling,
         source: "bundled",
-        needsPython: SCRIPT_PAYLOADS.has(relativePath),
+        needsPython: target.script,
         searched,
       };
+    }
+
+    // 2. Installed optional dependency for this platform.
+    const pkg = packageNameFor(dir);
+    searched.push(`${pkg ?? dir}/${target.filename}`);
+    const installed = resolveSubPackageBinary(dir);
+    if (installed) {
+      return {
+        path: installed,
+        source: "bundled",
+        needsPython: target.script,
+        searched,
+      };
+    }
   }
 
-  // The zipapp fallback needs a POSIX kernel and python3; never usable on Windows.
+  // 3. The zipapp fallback needs a POSIX kernel and python3; never usable on Windows.
   if (process.platform !== "win32") {
     searched.push(UNIVERSAL_FALLBACK);
     const universal = join(__dirname, "..", UNIVERSAL_FALLBACK);
@@ -192,7 +253,7 @@ export function resolveBinary(): ResolvedBinary {
       };
   }
 
-  // Unknown payload: assume it may be a zipapp (e.g. a pip-installed yt-dlp on Termux) and let
+  // 4. Unknown payload: assume it may be a zipapp (e.g. a pip-installed yt-dlp on Termux) and let
   // the ENOEXEC retry in runYtDlp route it through the interpreter.
   return { path: PATH_FALLBACK, source: "path", needsPython: false, searched };
 }
@@ -202,17 +263,16 @@ export function getBinaryPath(): string {
   return resolveBinary().path;
 }
 
-function requiresPython(target: string): boolean {
-  return NEEDS_PYTHON.has(target);
-}
-
 function missingBinaryMessage(resolved: ResolvedBinary): string {
   const key = getTargetKey();
   const hint =
     getPlatform() === "android"
       ? "On Termux install Python first: `pkg install python`, then `pip install -U yt-dlp`."
       : "Install yt-dlp first, e.g. `pip install -U yt-dlp`, or put `yt-dlp` on your PATH.";
-  const pythonNote = requiresPython(key)
+  // Driven by the payload we actually resolved, so a Termux or armv7 install - both of which get
+  // the zipapp - is told about python3 whether or not the failure was a missing interpreter.
+  const needsPython = resolved.needsPython || getPlatform() === "android";
+  const pythonNote = needsPython
     ? "\n  Note: the bundled payload for this platform is a python3 zipapp, so python3 must be on PATH."
     : "";
   return (

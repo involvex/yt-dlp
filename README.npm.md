@@ -57,11 +57,41 @@ main();
 
 ## Bundled binaries
 
-Native yt-dlp executables are bundled for Windows (x64, x86, arm64), Linux (x64, arm64, musl x64),
+Native yt-dlp executables are provided for Windows (x64, x86, arm64), Linux (x64, arm64, musl x64),
 and macOS (universal2, one binary for both Apple Silicon and Intel). The binary matching your
 platform is selected automatically - no configuration needed.
 
-If no matching binary is present, the CLI falls back to a `yt-dlp` found on your `PATH`.
+Each one ships as a separate small package, pulled in automatically:
+
+\`\`\`
+@involvex/yt-dlp                          2.9 MB   the wrapper, plus the Python zipapp
+@involvex/yt-dlp-binary-windows-x64       ~17 MB
+@involvex/yt-dlp-binary-windows-x86       ~13 MB
+@involvex/yt-dlp-binary-windows-arm64     ~20 MB
+@involvex/yt-dlp-binary-linux-x64         ~39 MB
+@involvex/yt-dlp-binary-linux-arm64       ~38 MB
+@involvex/yt-dlp-binary-linux-musl-x64    ~39 MB
+@involvex/yt-dlp-binary-macos-universal2  ~35 MB
+\`\`\`
+
+The 2.9 MB wrapper is almost entirely the Python zipapp, which is kept inside it on purpose — it is
+the fallback for platforms no binary package covers (see Android/Termux below). So a Windows x64
+install downloads roughly 17 MB + 2.9 MB rather than the ~214 MB a single combined tarball costs, and
+packages for platforms you are not on are never fetched at all. Do not install the
+`@involvex/yt-dlp-binary-*` packages directly — the wrapper picks the right one.
+
+Resolution falls back rather than failing:
+
+1. the native binary for your platform, from its package
+2. the arch-independent Python zipapp bundled with the wrapper
+3. a \`yt-dlp\` found on your \`PATH\`
+
+That means a skipped or missing binary package is not a broken install.
+
+On Alpine and other musl systems the musl build is used; see \`libc\` in
+[docs/npm-binary-distribution.md](https://github.com/involvex/yt-dlp/blob/integrate-upstream/docs/npm-binary-distribution.md).
+Package managers that ignore \`libc\` may fetch both the glibc and musl builds, but the correct one
+still runs.
 
 ## Android / Termux
 
@@ -191,6 +221,18 @@ bun install
 # Build the package
 
 bun run build
+
+# Fetch the platform binaries (optional; only needed to exercise them locally)
+
+bun run build:bin
+
+# Stage the per-platform binary packages
+
+bun run build:binpkg
+
+# Typecheck src/, scripts/ and test/
+
+bun run typecheck
 
 # Generate completion scripts
 
