@@ -53,13 +53,13 @@
   "main": "./dist/index.js",
   "name": "@involvex/yt-dlp",
   "optionalDependencies": {
-    "@involvex/yt-dlp-binary-windows-x64": "2026.8.21",
-    "@involvex/yt-dlp-binary-windows-x86": "2026.8.21",
-    "@involvex/yt-dlp-binary-windows-arm64": "2026.8.21",
-    "@involvex/yt-dlp-binary-linux-x64": "2026.8.21",
-    "@involvex/yt-dlp-binary-linux-arm64": "2026.8.21",
-    "@involvex/yt-dlp-binary-linux-musl-x64": "2026.8.21",
-    "@involvex/yt-dlp-binary-macos-universal2": "2026.8.21"
+    "@involvex/yt-dlp-binary-windows-x64": "2026.8.22",
+    "@involvex/yt-dlp-binary-windows-x86": "2026.8.22",
+    "@involvex/yt-dlp-binary-windows-arm64": "2026.8.22",
+    "@involvex/yt-dlp-binary-linux-x64": "2026.8.22",
+    "@involvex/yt-dlp-binary-linux-arm64": "2026.8.22",
+    "@involvex/yt-dlp-binary-linux-musl-x64": "2026.8.22",
+    "@involvex/yt-dlp-binary-macos-universal2": "2026.8.22"
   },
   "os": [
     "win32",
@@ -88,5 +88,5 @@
   },
   "type": "module",
   "types": "./dist/index.d.ts",
-  "version": "2026.8.21"
+  "version": "2026.8.22"
 }
