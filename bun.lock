@@ -9,6 +9,15 @@
         "@types/node": "^20.0.0",
         "typescript": "^5.0.0",
       },
+      "optionalDependencies": {
+        "@involvex/yt-dlp-binary-linux-arm64": "2026.8.21",
+        "@involvex/yt-dlp-binary-linux-musl-x64": "2026.8.21",
+        "@involvex/yt-dlp-binary-linux-x64": "2026.8.21",
+        "@involvex/yt-dlp-binary-macos-universal2": "2026.8.21",
+        "@involvex/yt-dlp-binary-windows-arm64": "2026.8.21",
+        "@involvex/yt-dlp-binary-windows-x64": "2026.8.21",
+        "@involvex/yt-dlp-binary-windows-x86": "2026.8.21",
+      },
     },
   },
   "packages": {
